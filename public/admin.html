@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seven Puzzles – Painel do admin</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Space+Grotesk:wght@400;600;700&family=Unbounded:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p id="connectionStatus" class="connection-status" role="status" aria-live="polite" hidden>Conexão interrompida. Tentando reconectar; mantenha esta aba aberta.</p>
+<div class="admin">
+  <a class="admin-home" href="/" aria-label="Voltar à página inicial" title="Voltar à página inicial">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+    <span>Início</span>
+  </a>
+  <header class="center" style="padding:10px 0 18px"><div class="title sm">SEVEN PUZZLES</div><p class="muted">Painel do admin</p></header>
+
+  <section id="login" class="narrow" style="padding-top:0">
+    <div class="card glow stack">
+      <h2>Criar uma sala</h2>
+      <label for="username">Usuário do admin</label><input id="username" class="input" placeholder="Usuário do admin" autocomplete="username">
+      <label for="pw">Senha do admin</label>
+      <div class="password-field"><input id="pw" type="password" class="input" placeholder="Senha do admin" autocomplete="current-password">
+        <button id="togglePassword" class="password-toggle" type="button" aria-label="Mostrar senha" title="Mostrar senha" aria-controls="pw" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path id="passwordSlash" d="M3 3l18 18" hidden/></svg></button>
+      </div>
+      <button id="create" class="btn block">Gerar código da sala</button>
+      <p id="loginErr" class="err" role="alert"></p>
+    </div>
+    <p class="center" style="margin-top:16px"><a href="/teste.html">Só quero testar as perguntas (modo teste) →</a></p>
+  </section>
+
+  <section id="lobby" hidden>
+    <div class="adm-grid">
+      <div class="card center stack">
+        <p class="muted">Código da sala</p>
+        <div id="code" class="roomcode"></div>
+        <div id="qr" class="qr" role="img" aria-label="QR code da sala" style="margin:0 auto"></div>
+        <p class="muted" style="font-size:.9rem">Alunos escaneiam o QR ou digitam o código em<br><b id="url" style="color:var(--text)"></b></p>
+      </div>
+      <div class="stack">
+        <div class="card"><h2>Configurações da sala</h2>
+          <p class="muted" style="font-size:.9rem">Escolha o modo antes de receber participantes. As configurações ficam bloqueadas durante a partida.</p>
+          <label for="cMode">Modo de partida</label>
+          <select id="cMode" class="input"><option value="groups">Partida em grupo · com final individual</option><option value="individual">Partida individual · sem equipes</option><option value="elimination">Competição entre grupos · eliminação</option></select>
+          <p id="cModeRules" class="muted" style="margin-top:8px"></p>
+          <p class="muted" style="margin-top:8px">90s por questão · acerto: 100 pontos · bônus de até 50 antes dos 45s.</p>
+          <label class="check-option" style="margin-top:12px"><input id="cLocked" type="checkbox"> Bloquear novas inscrições e trocas de equipe</label>
+          <div id="groupConfig" class="row" style="margin-top:12px">
+            <label>Equipes<input id="cTeams" type="number" min="2" max="10" class="input num"></label>
+            <label>Mín. por equipe<input id="cMin" type="number" min="1" max="5" class="input num"></label>
+            <label>Máx. por equipe<input id="cMax" type="number" min="1" max="5" class="input num"></label>
+          </div>
+          <button id="cApply" class="btn alt block" style="margin-top:12px">Aplicar configurações</button><p id="cMsg" class="err center" style="margin-top:6px"></p></div>
+        <div class="card"><h2>Participantes <span id="count" class="muted" style="font-size:1rem"></span></h2>
+          <p class="muted" style="font-size:.9rem">Remova participantes individualmente ou esvazie um grupo inteiro.</p>
+          <button id="balance" class="btn ghost block" style="margin-top:8px">Distribuir participantes equilibradamente</button><p id="capacity" class="muted"></p><div id="teams" class="grid" style="margin-top:12px"></div></div>
+        <div class="card"><button id="start" class="btn block">Iniciar partida</button><p id="startMsg" class="err center" style="margin-top:8px"></p><p class="center" style="margin-top:8px"><a href="/teste.html" target="_blank" rel="noopener">Abrir o modo teste das perguntas</a></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="card center">
+      <span id="gStatus" class="status"></span>
+      <div id="gTimer" class="timerbig"></div>
+      <p id="gInfo" class="muted"></p>
+      <div class="row admin-actions" style="margin-top:12px"><button id="pause" class="btn alt">Pausar</button><button id="resume" class="btn" hidden>Retomar</button><button id="skip" class="btn ghost">Avançar todos</button><button id="stop" class="btn ghost">Parar partida</button></div>
+    </div>
+    <h3 id="gRankTitle" style="margin-top:20px"></h3><div id="gRank" class="rank"></div>
+    <div class="card" style="margin-top:20px"><h3>Participantes e tempo de resposta</h3><p class="muted" style="font-size:.9rem">Acompanhe o progresso individual, o tempo decorrido e o tempo gasto na última resposta. Você pode remover alguém sem reiniciar a sala.</p><div id="gParticipants" class="participants"></div></div>
+  </section>
+
+  <section id="between" hidden class="card center" style="margin-top:12px"><div id="bBody"></div><div class="row admin-actions" style="margin-top:16px"><button id="finalStart" class="btn block" hidden>Autorizar início da final individual</button><button id="pauseBetween" class="btn alt" hidden>Pausar desempate</button><button id="resumeBetween" class="btn" hidden>Retomar desempate</button><button id="stopBetween" class="btn ghost">Encerrar e voltar à sala</button></div></section>
+
+  <section id="end" hidden class="center">
+    <div id="eBody"></div><div id="eRank" class="rank" style="text-align:left;max-width:560px;margin:16px auto"></div>
+    <button id="exportResults" class="btn ghost">Baixar resultados (CSV)</button>
+    <button id="again" class="btn alt">Nova partida na mesma sala</button>
+  </section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="sock.js"></script>
+<script type="module" src="admin.js"></script>
+</body>
+</html>

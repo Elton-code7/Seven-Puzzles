@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seven Puzzles – Modo teste</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Space+Grotesk:wght@400;600;700&family=Unbounded:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="narrow">
+  <div class="center">
+    <div class="title sm">SEVEN PUZZLES</div>
+    <span class="status" style="margin-top:8px">Modo teste</span>
+    <p class="muted" style="margin-top:8px">Teste as questões e os três tipos de competição no seu navegador. Você joga com participantes fictícios, sem criar uma sala nem salvar pontos reais.</p>
+    <p style="margin-top:6px"><a href="/admin.html">← Painel do admin</a></p>
+  </div>
+
+  <div class="card stack" style="margin-top:18px">
+    <label for="tMode">O que testar</label>
+    <select id="tMode" class="input">
+      <option value="single">Pergunta avulsa (escolho categoria e nível)</option>
+      <option value="individual">Partida individual · sem equipes</option>
+      <option value="groups">Partida em grupo · com final individual</option>
+      <option value="elimination">Competição entre grupos · eliminação</option>
+      <option value="final">Simular a final (6 médias, com tempo)</option>
+    </select>
+    <p id="tModeRules" class="muted"></p>
+    <div id="tSingle" class="stack">
+      <label for="tTypeFilter">Tipo de questão</label><select id="tTypeFilter" class="input"></select>
+      <button id="tVisuals" type="button" class="btn ghost">Revisar os seis símbolos: AND, OR, NOT, NAND, NOR e XOR</button>
+      <div class="row">
+      <div><label for="tCat">Categoria</label><select id="tCat" class="input"></select></div>
+      <div><label for="tDiff">Nível</label><select id="tDiff" class="input"></select></div>
+      </div>
+      <label for="tQuestion">Consultar pelo número</label><select id="tQuestion" class="input"></select>
+      <label class="check-option"><input id="tShuffle" type="checkbox"> Embaralhar alternativas</label>
+      <p class="muted">Desmarcado: alternativas em ordem fixa. Nas competições, a ordem é sorteada; o conteúdo e a resposta correta não mudam.</p>
+    </div>
+    <div id="tRivals" hidden><label for="tAccuracy">Acertos dos participantes simulados</label><select id="tAccuracy" class="input"><option value="0.5">Aproximadamente 50%</option><option value="0">0% · útil para testar empates</option><option value="1">100% · rivais sempre acertam</option></select><p id="tRivalInfo" class="muted">Individual: você e 2 rivais. Em equipes: 3 grupos de 2 pessoas; você pertence ao Team AND. Os demais têm respostas e tempos simulados ao concluir a rodada.</p></div>
+    <p id="tError" class="err" role="alert"></p>
+    <button id="tStart" class="btn block">Gerar pergunta</button>
+  </div>
+
+  <div id="tCompetition" class="card stack" style="margin-top:16px" hidden>
+    <h2 id="tCompetitionTitle"></h2><p id="tCompetitionStatus" class="muted" aria-live="polite"></p>
+    <div id="tRoster" class="chips"></div><div id="tRanking" class="rank"></div>
+    <button id="tSimulate" class="btn ghost">Simular as respostas restantes desta rodada</button>
+    <p id="tSimulateHint" class="muted">Este botão também simula suas respostas restantes. Desempates e próximas etapas avançam pelo botão “Continuar”, para você poder conferir cada resultado.</p>
+  </div>
+  <div id="tPlay" class="card" style="margin-top:16px" hidden>
+    <div class="hud"><span id="tStage"></span><span id="tCatLine"></span></div>
+    <div class="hud"><span id="tCount"></span><span id="tDiffBadge" class="badge"></span></div>
+    <div id="tTimer"><div class="timer"><i id="tBar"></i></div><div class="secs" id="tSecs"></div></div>
+    <div id="tText" class="qtext"></div>
+    <div id="tOpts" class="opts"></div>
+    <div id="tWhy" class="why" hidden></div>
+    <div class="row" style="margin-top:14px"><button id="tPause" class="btn alt" hidden>Pausar</button><button id="tShow" class="btn ghost">Mostrar resposta</button><button id="tNext" class="btn" hidden>Próxima</button></div>
+  </div>
+  <div id="tSum" class="card center stack" style="margin-top:16px" hidden><div id="tSummaryBody" aria-live="polite"></div><button id="tContinue" class="btn" hidden>Continuar</button></div>
+</main>
+<script type="module" src="teste.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+name = "seven-puzzles"
+main = "src/worker.js"
+compatibility_date = "2025-10-01"
+
+# Arquivos do site (HTML, CSS, JS): servidos de graça pela Cloudflare
+[assets]
+directory = "./public"
+run_worker_first = ["/api/*", "/ws"]
+
+# Uma sala de jogo = um Durable Object
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# O plano gratuito exige Durable Objects com armazenamento SQLite
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080a18">
+<title>Seven Puzzles – quiz de circuitos digitais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Space+Grotesk:wght@400;600;700&family=Unbounded:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p id="connectionStatus" class="connection-status" role="status" aria-live="polite" hidden>Conexão interrompida. Tentando reconectar; mantenha esta aba aberta.</p>
+
+<!-- INÍCIO -->
+<main id="s-home" class="screen">
+  <nav class="nav"><a href="#entrar">Entrar</a><a href="#como">Como funciona</a><a href="#niveis">Níveis</a><a href="#pontos">Pontuação</a><a href="#conectivos">Conectivos lógicos</a><a class="dev-link" href="/admin.html" aria-label="Acesso administrativo">&lt;/&gt; Admin</a></nav>
+  <div class="wrap">
+    <header class="hero">
+      <h1 class="title">SEVEN<br>PUZZLES</h1>
+      <div class="leds" aria-hidden="true">
+        <i class="led" style="--i:0;--c:#34d399"></i><i class="led" style="--i:1;--c:#34d399"></i><i class="led" style="--i:2;--c:#fbbf24"></i><i class="led" style="--i:3;--c:#fbbf24"></i><i class="led" style="--i:4;--c:#fb923c"></i><i class="led" style="--i:5;--c:#fb923c"></i><i class="led" style="--i:6;--c:#ef4444"></i>
+      </div>
+      <p class="tag">Sete enigmas de circuitos digitais, três formas de jogar e uma sala cheia de rivais. Quem decifra mais rápido leva a glória.</p>
+    </header>
+
+    <section id="entrar" class="narrow" style="padding-top:0">
+      <div class="card glow stack">
+        <button id="watchAgain" class="btn alt block" hidden>Voltar a acompanhar a disputa</button><h2 class="center">Entrar na partida</h2>
+        <p class="muted center">Digite o código da sala que o Administrador mostrou ou escaneie o QR code.</p>
+        <input id="code" class="input code" maxlength="5" placeholder="•••••" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="Código da sala">
+        <button id="go" class="btn block">Entrar com o código</button>
+        <button id="scan" class="btn alt block">Escanear QR code</button>
+        <p id="homeErr" class="err center" role="alert"></p>
+      </div>
+    </section>
+
+    <section id="como" class="block">
+      <h2>Como funciona a partida</h2>
+      
+      
+      <ol class="steps">
+        <li><span>Entre pelo código ou QR code e confira as regras antes de participar.</span></li>
+        <li><span>Cada pergunta tem <b>1 minuto e 30 segundos</b>.</span></li>
+        <li><span>Veja a resposta correta e a explicação após responder.</span></li>
+        <li><span>Quem está fora da disputa pode acompanhar o progresso e os pontos dos participantes ativos, ou voltar à página inicial.</span></li>
+        <li><span>Se não houver questões inéditas suficientes para desempatar, o jogo registra o empate sem repetir perguntas.</span></li>
+      </ol>
+
+      <h2>Modos de jogo</h2>
+        <p class="muted"></p>
+      <div class="grid mode-cards">
+        <article class="card"><h3>Partida individual</h3><p>Entre com seu nome. Cada pessoa responde a 7 perguntas. Pontos e acertos definem o vencedor; persistindo o empate, os líderes disputam perguntas extras.</p></article>
+        <article class="card"><h3>Partida em grupo</h3><p>Escolha sua equipe e some pontos com seus colegas em 7 perguntas por pessoa. A equipe vencedora avança à final: o administrador autoriza 6 perguntas médias entre seus integrantes.</p></article>
+        <article class="card"><h3>Competição entre grupos</h3><p>Primeira rodada com 7 perguntas por pessoa; as seguintes têm 2 (uma fácil e uma média), com placar zerado. A equipe com menos pontos é eliminada; acertos desempatam. Empatadas na última posição saem juntas, exceto quando todas empatam. A última equipe vence.</p></article>
+      </div>
+
+    </section>
+
+    <section id="niveis" class="block">
+      <h2>Níveis das perguntas</h2>
+      <p class="muted">A rodada começa com 3 perguntas fáceis e segue com 4 médias. A final entre integrantes tem 6 perguntas médias. Todos têm 90 segundos por pergunta.</p>
+      <div class="grid">
+        <div class="card lvl" style="--c:#34d399"><div class="face">😄</div><h3>Fácil</h3><p class="muted">Valores simples, conceitos e portas básicas. 90 segundos.</p></div>
+        <div class="card lvl" style="--c:#fbbf24"><div class="face">🤔</div><h3>Médio</h3><p class="muted">Expressões, tabelas-verdade, simplificações e circuitos. 90 segundos.</p></div>
+      </div>
+      <h3 style="margin-top:26px">Seis categorias</h3>
+      <div class="chips"><span class="chip">Portas lógicas (AND, OR, NOT)</span><span class="chip">Portas derivadas (NAND, NOR, XOR)</span><span class="chip">Tabelas-verdade</span><span class="chip">Álgebra booleana</span><span class="chip">Circuitos combinacionais</span><span class="chip">Circuitos Digitais</span></div>
+    </section>
+
+    <section id="pontos" class="block">
+      <h2>Pontuação</h2>
+      <p class="muted">No modo individual, cada pessoa soma seus próprios pontos. Nos modos em equipe, os pontos dos integrantes são somados. Em caso de empate em pontos, vence quem tem mais acertos.</p>
+      <div class="score">
+        <div><b>100</b>resposta correta</div>
+        <div><b>+50</b>bônus de velocidade: de 1 a 50 para acertos antes dos 45 segundos; diminui com o tempo. A partir de 45s, sem bônus</div>
+        <div><b>0</b>resposta incorreta ou sem resposta</div>
+      </div>
+    </section>
+
+    <section id="conectivos" class="block">
+      <h2>Guia dos conectivos lógicos</h2>
+      <p class="muted">Cada porta aparece de duas formas: o símbolo no circuito (figura) e a expressão da álgebra booleana (matemática). Revise antes de jogar.</p>
+      <div id="gates" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(290px,1fr))"></div>
+    </section>
+    <footer>Seven Puzzles · quiz de circuitos digitais</footer>
+  </div>
+</main>
+
+<!-- ESCOLHER NOME E EQUIPE -->
+<main id="s-join" class="screen narrow" hidden>
+  <div class="center"><div class="title sm">SEVEN PUZZLES</div><p class="muted">Sala <b id="jCode" class="math"></b></p></div>
+  <div class="card stack" style="margin-top:18px">
+    <label for="name"><b>Seu nome</b></label>
+    <input id="name" class="input" maxlength="16" placeholder="Como quer aparecer no ranking?" autocomplete="off">
+    <h3 id="jMode"></h3><p id="jModeRules" class="muted"></p><b id="jTeamTitle">Sua equipe</b><p id="jRules" class="muted" style="font-size:.9rem"></p>
+    <div id="jTeams" class="teams"></div>
+    <button id="join" class="btn block">Entrar na equipe</button>
+    <p id="joinErr" class="err center" role="alert"></p>
+    <button id="back" class="btn ghost block">Voltar</button>
+  </div>
+</main>
+
+<!-- SALA DE ESPERA -->
+<main id="s-lobby" class="screen narrow" hidden>
+  <div class="center"><div class="title sm">SEVEN PUZZLES</div>
+    <p class="muted">Sala <b id="lCode" class="math"></b> · você é <b id="lName"></b></p>
+    <p style="margin:14px 0 4px"><b>Aguardando o Administrador iniciar<span class="dots"></span></b></p>
+    <h3 id="lMode"></h3><p id="lModeRules" class="muted"></p><p id="lHint" class="muted" style="font-size:.9rem"></p></div>
+  <div id="lTeams" class="teams" style="margin-top:16px"></div>
+  <p id="lobErr" class="err center"></p>
+</main>
+
+<!-- PERGUNTA -->
+<main id="s-q" class="screen narrow" hidden>
+  <div class="hud"><span id="qStage"></span><span id="qCount"></span></div>
+  <div class="hud"><span id="qCat"></span><span id="qDiff" class="badge"></span></div>
+  <div class="timer"><i id="qBar"></i></div><div class="secs" id="qSecs"></div>
+  <div id="qText" class="qtext"></div>
+  <div id="qOpts" class="opts"></div>
+  <p id="qMsg" class="muted center" style="margin-top:14px;min-height:1.4em"></p>
+</main>
+
+<!-- RESULTADO DA PERGUNTA / ESPERA -->
+<main id="s-reveal" class="screen narrow" hidden>
+  <div id="rBody"></div>
+  <h3 id="rRankTitle" style="margin-top:20px"></h3>
+  <div id="rRank" class="rank"></div>
+  <p class="muted center dots" style="margin-top:16px">Próxima pergunta já vem</p>
+</main>
+
+<main id="s-between" class="screen narrow center" hidden><div id="bBody" style="padding-top:40px"></div></main>
+<main id="s-end" class="screen narrow center" hidden><div id="eBody" style="padding-top:24px"></div><div id="eRank" class="rank" style="text-align:left"></div><button id="returnHome" class="btn block" style="margin-top:22px">Voltar à página inicial</button></main>
+<main id="s-pause" class="screen narrow center" hidden><div class="card" style="margin-top:48px"><div class="big">⏸ Partida pausada</div><p class="muted">O Administrador pausou a partida. O cronômetro está congelado e continuará do ponto em que parou.</p></div></main>
+
+<main id="s-spectate" class="screen wrap" hidden>
+  <div class="card"><div class="hud"><h2>Acompanhar a disputa</h2><button id="leaveSpectate" class="btn ghost" hidden>Voltar à página inicial</button></div>
+  <p id="spTitle" class="muted"></p><p class="muted">Visualização ao vivo dos participantes em disputa. Apenas o Administrador controla a partida.</p>
+  <p id="spWait" class="muted">Aguarde os demais participantes e o resultado da disputa para voltar à página inicial.</p></div>
+  <div id="spPlayers" class="participants card" style="margin-top:16px"></div>
+  <h3 style="margin-top:20px">Ranking da disputa</h3><div id="spRank" class="rank"></div>
+</main>
+<!-- LEITOR DE QR -->
+<div id="modal" class="modal" hidden>
+  <div class="card stack"><h3>Aponte a câmera para o QR code</h3><div id="reader"></div><p id="scanErr" class="err"></p><button id="stopScan" class="btn ghost block">Cancelar</button></div>
+</div>
+
+<script src="sock.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script type="module" src="gates.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "seven-puzzles",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node test.js && node test-competition.js",
+    "audit:questions": "node scripts/audit-questions.mjs",
+    "dev:rede": "wrangler dev --ip 0.0.0.0",
+    "import:questions": "node scripts/import-questions.mjs",
+    "check": "node scripts/check-source.mjs && npm run audit:questions && npm test",
+    "deploy:check": "wrangler deploy --dry-run --outdir dist"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

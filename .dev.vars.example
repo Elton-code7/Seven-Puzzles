@@ -1,0 +1,3 @@
+# Copie para .dev.vars e escolha credenciais locais. Nunca publique .dev.vars.
+ADMIN_USERNAME=professor
+ADMIN_PASSWORD=troque-esta-senha-local
