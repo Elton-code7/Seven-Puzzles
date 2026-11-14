@@ -1,10 +1,25 @@
-# Seven Puzzles
+<h1 align="center"> Seven Puzzles </h1>
+
+<p align="center">
+  Sete enigmas de circuitos digitais, três formas de jogar e uma sala cheia de rivais. Quem decifra mais rápido leva a glória.
+  
+</p>
+
+<p align="center">
+  <img src="https://iconic-api.onrender.com/dark/js" width="64px" />
+  <img src="https://iconic-api.onrender.com/dark/css" width="64px" />
+  <img src="https://iconic-api.onrender.com/dark/html" width="64px" />
+</p>
+
+---
+
+## 📌 Sobre o Projeto
 
 Quiz de lógica e circuitos digitais para jogar em sala de aula, com perguntas no celular, placar ao vivo e controle pelo professor. O projeto usa **HTML, CSS e JavaScript**, **Cloudflare Workers**, **Durable Objects com SQLite** e **WebSocket**.
 
 A interface inclui um guia de portas lógicas, entrada por código ou QR code, três modos de competição e um simulador que funciona sem criar sala.
 
-## Recursos
+## ✨ Recursos
 
 - **Seis categorias**, com níveis fácil e médio.
 - **90 segundos por pergunta**, avanço individual e explicação após a resposta.
@@ -26,7 +41,7 @@ As rodadas começam com placar zerado. Pontos são o primeiro critério; quantid
 
 Na eliminação, equipes empatadas na última posição saem juntas. Se todas empatarem, ninguém sai e uma nova rodada é disputada. Nos grupos com final individual, um empate entre equipes líderes gera outra rodada de 7 perguntas.
 
-### Tempo e pontuação
+### ⏰ Tempo e pontuação
 
 - Rodada principal: **3 fáceis + 4 médias**.
 - Final individual: **6 médias**.
@@ -61,7 +76,7 @@ As seis portas do guia — **AND, OR, NOT, NAND, NOR e XOR** — também têm qu
 
 Com o banco atual, o modo individual aceita **até 19 participantes**. Esse limite é calculado a partir das questões disponíveis por nível e atualizado no painel. Nos modos em grupo, configure de **2 a 10 equipes**, com **1 a 5 integrantes por equipe**.
 
-## Executar localmente
+## 🚀 Como Executar localmente
 
 ### Requisitos
 
@@ -109,7 +124,7 @@ Conecte os dispositivos à mesma rede Wi-Fi. No computador, abra a aplicação p
 
 A câmera pode ser bloqueada pelo navegador em HTTP local. Nesse caso, use o código digitado. Para câmera em produção, use o endereço HTTPS da publicação.
 
-## Usar o painel
+## 🖥️ Usar o painel
 
 1. Informe usuário e senha; o botão de olho permite mostrar ou ocultar a senha digitada.
 2. Crie a sala e escolha o modo **antes de receber os participantes**.
@@ -164,3 +179,12 @@ Ao adicionar documentos, cadastre origem e contagem em `public/question-catalog.
 
 Os testes verificam o banco, símbolos, formatação, pontuação, tempo, pausas, avanço independente, permissões, reconexão, persistência, limites de inscrição, remoções, os três modos, desempates e esgotamento das perguntas. O simulador também tem testes próprios.
 
+## 🤝 Contribuição
+
+ **Amanda Chiavini** — [LinkedIn](https://www.linkedin.com/in/amanda-chiavini-2a4a3828a)
+ 
+ **Ana Livia Breviglieri** — [LinkedIn](https://www.linkedin.com/in/ana-livia-lima-breviglieri-6a3105308)
+ 
+ **Elton Henrique** — [LinkedIn](https://www.linkedin.com/in/elton-henrique-da-silva-335aa8244/)
+
+ 
