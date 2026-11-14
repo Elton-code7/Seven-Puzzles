@@ -136,7 +136,7 @@ A câmera pode ser bloqueada pelo navegador em HTTP local. Nesse caso, use o có
 
 Parar retorna todos à sala de espera. Remoções ficam disponíveis no lobby e durante as perguntas; algumas etapas bloqueiam remoções para manter o resultado consistente. O modo da sala só pode mudar enquanto estiver vazia.
 
-Quem está fora da disputa acompanha apenas os participantes ativos. O retorno à página inicial fica disponível após o resultado final. No modo em grupo, integrantes das outras equipes também podem voltar ao início e retornar ao acompanhamento depois que o administrador inicia a final individual; os finalistas aguardam o resultado. Se o administrador encerrar a partida, todos voltam automaticamente à página inicial. Salas expiram após **8 horas** de sua criação.
+Quem está fora da disputa acompanha apenas os participantes ativos. O retorno à página inicial fica disponível após o resultado final. No modo em grupo, integrantes das outras equipes também podem voltar ao início depois que o administrador inicia a final individual; os finalistas aguardam o resultado. Ao voltar ao início, o participante sai da sala, tem a sessão encerrada e é removido imediatamente da lista de participantes do administrador. Os resultados e o histórico das rodadas concluídas são preservados. Se o administrador encerrar a partida, todos voltam automaticamente à página inicial. Salas expiram após **8 horas** de sua criação.
 
 ## Modo teste
 
@@ -186,5 +186,3 @@ Os testes verificam o banco, símbolos, formatação, pontuação, tempo, pausas
  **Ana Livia Breviglieri** — [LinkedIn](https://www.linkedin.com/in/ana-livia-lima-breviglieri-6a3105308)
  
  **Elton Henrique** — [LinkedIn](https://www.linkedin.com/in/elton-henrique-da-silva-335aa8244/)
-
- 

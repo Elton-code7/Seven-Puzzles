@@ -633,6 +633,17 @@ export class Room {
         p.sid = s.id; s.data.pid = p.pid;
         cb({ ok: true, name: p.name, team: p.team, code: r.code, config: this.lobbyState().config }); this.sendSnapshot(p); this.pushAdmin();
       },
+      'player:leave': (s, d, cb) => {
+        const r = this.r, p = r.players.get(s.data.pid);
+        if (!p || p.sid !== s.id) return cb({ ok: false, error: 'Sessão de participante inválida.' });
+        if (r.phase !== 'ended' && !this.spectatorState(p.pid).canReturnHome)
+          return cb({ ok: false, error: 'Aguarde o resultado da disputa para sair da sala.' });
+        // Resultados e rodadas concluídas são snapshots e permanecem no histórico.
+        this.removePlayer(p.pid, false); s.data.pid = null;
+        cb({ ok: true });
+        this.onClose(s);
+        this.pushAdmin(); void this.persist();
+      },
       'player:switch': (s, d, cb) => {
         const r = this.r, p = r.players.get(s.data.pid);
         if (r.config.mode === 'individual' || r.config.locked) return cb({ ok: false, error: 'Troca de equipes indisponível.' });

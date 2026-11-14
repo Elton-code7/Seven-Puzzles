@@ -122,7 +122,7 @@ function renderSpectator(s) {
   }, 250);
 }
 socket.on('game:spectate', renderSpectator);
-$('#leaveSpectate').onclick = () => { if (!spectator?.canReturnHome) return; S.spectatorHome = true; $('#watchAgain').hidden = false; show('s-home'); };
+$('#leaveSpectate').onclick = () => { if (spectator?.canReturnHome) leaveRoom(); };
 $('#watchAgain').onclick = () => { S.spectatorHome = false; if (finalResult) { $('#watchAgain').hidden = true; show('s-end'); } else if (spectator) renderSpectator(spectator); };
 socket.on('game:paused', p => { clearInterval(tick); if (!S.spectatorHome) show('s-pause'); });
 socket.on('game:complete', p => {
@@ -130,14 +130,29 @@ socket.on('game:complete', p => {
   $('#rBody').innerHTML = `<div class="center"><div class="big">✅ Etapa concluída</div><p class="muted">Você respondeu às ${p.total} perguntas desta etapa. Aguarde o restante da disputa.</p></div>`;
   $('#rRankTitle').textContent = ''; $('#rRank').innerHTML = ''; show('s-reveal');
 });
-socket.on('game:stopped', p => {
+function returnToHome(message = '') {
   clearInterval(tick); localStorage.removeItem('sp_session'); socket.close();
   Object.assign(S, { pid: null, token: null, resume: null, code: null, spectatorHome: false });
   spectator = null; finalResult = null;
   $('#watchAgain').hidden = true; $('#connectionStatus').hidden = true;
-  $('#homeErr').textContent = p?.message || 'A partida foi encerrada.';
+  $('#homeErr').textContent = message;
   show('s-home');
-});
+}
+socket.on('game:stopped', p => returnToHome(p?.message || 'A partida foi encerrada.'));
+
+let leaving = false;
+function leaveRoom() {
+  if (leaving) return;
+  leaving = true;
+  const buttons = [$('#leaveSpectate'), $('#returnHome')];
+  buttons.forEach(b => { b.disabled = true; b.textContent = 'Saindo da sala…'; });
+  socket.emit('player:leave', {}, r => {
+    leaving = false;
+    buttons.forEach(b => { b.disabled = false; b.textContent = 'Voltar à página inicial'; });
+    if (r?.ok) returnToHome();
+    else alert(r?.error || 'Não foi possível sair da sala. Tente novamente.');
+  });
+}
 
 /* ---------- resultado ---------- */
 function rankHTML(r) {
@@ -182,7 +197,7 @@ socket.on('game:end', r => {
   $('#eRank').innerHTML = rankHTML({ kind: r.kind, list: r.ranking }); if (!S.spectatorHome) show('s-end');
 });
 
-$('#returnHome').onclick = () => { if (!finalResult) return; localStorage.removeItem('sp_session'); location.href = '/'; };
+$('#returnHome').onclick = () => { if (finalResult) leaveRoom(); };
 
 /* ---------- conexão e reconexão ---------- */
 function expiredSession() {

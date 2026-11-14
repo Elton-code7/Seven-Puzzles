@@ -59,7 +59,10 @@ function playerPage(room, pid) {
   const socket = {
     on(event, fn) { if (!events.has(event)) events.set(event, []); events.get(event).push(fn); },
     open() {}, close() { closed = true; },
-    emit(event, data, cb) { if (cb) cb({ ok: true, code: room.r.code, name: p.name, team: p.team, config: room.r.config }); }
+    emit(event, data, cb) {
+      if (event === 'player:leave') return cb(call(room, event, data, p.sid));
+      if (cb) cb({ ok: true, code: room.r.code, name: p.name, team: p.team, config: room.r.config });
+    }
   };
   const context = {
     io: () => socket, CAT: CATNAMES, questionMarkup, inline, participantMarkup, MODE_RULES, MODES,
@@ -348,7 +351,9 @@ retryClient.close();
     const outsider = mode === 'groups' ? join(game, 'Outra equipe', 'or') : null;
     call(game, 'admin:start');
     const page = playerPage(game, first);
+    assert.equal(call(game, 'player:leave', {}, game.r.players.get(first).sid).ok, false);
     completeOne(game, first, true); page.snapshot();
+    assert.equal(call(game, 'player:leave', {}, game.r.players.get(first).sid).ok, false);
     assert.equal(page.screen(), 's-spectate');
     assert.equal(page.elements.get('leaveSpectate').hidden, true);
     page.click('leaveSpectate'); assert.equal(page.screen(), 's-spectate');
@@ -366,13 +371,21 @@ retryClient.close();
       assert.equal(game.spectatorState(outsider).canReturnHome, false);
       call(game, 'admin:finalStart'); observer.snapshot();
       assert.equal(observer.elements.get('leaveSpectate').hidden, false);
-      observer.click('leaveSpectate'); assert.equal(observer.screen(), 's-home');
-      game.pauseGame(); observer.snapshot(); assert.equal(observer.screen(), 's-home');
-      observer.click('watchAgain'); assert.equal(observer.screen(), 's-spectate');
+      game.pauseGame(); observer.snapshot(); assert.equal(observer.screen(), 's-spectate');
       game.resumeGame();
       // Reconectar recupera a permissão da equipe espectadora, mas não a dos finalistas.
       const reconnected = playerPage(game, outsider); reconnected.snapshot();
       assert.equal(reconnected.elements.get('leaveSpectate').hidden, false);
+      const historyBeforeLeave = structuredClone(game.r.rounds);
+      const oldToken = game.r.players.get(outsider).token;
+      observer.click('leaveSpectate'); assert.equal(observer.screen(), 's-home');
+      assert.equal(observer.closed, true); assert.equal(observer.storage.has('sp_session'), false);
+      assert.equal(observer.elements.get('watchAgain').hidden, true);
+      assert.equal(game.r.players.has(outsider), false);
+      assert.equal(game.socks.has('Outra equipe-socket'), false);
+      assert.equal(game.adminState().players.some(p => p.pid === outsider), false);
+      assert.deepEqual(game.r.rounds, historyBeforeLeave);
+      assert.equal(call(game, 'player:rejoin', { pid: outsider, token: oldToken }, 'admin').ok, false);
       page.snapshot(); completeOne(game, first, true); page.snapshot();
       assert.equal(page.elements.get('leaveSpectate').hidden, true);
       page.click('leaveSpectate'); assert.equal(page.screen(), 's-spectate');
@@ -381,7 +394,13 @@ retryClient.close();
     page.snapshot(); assert.equal(page.screen(), 's-end');
     if (mode !== 'individual') assert.match(page.elements.get('eBody').innerHTML, /Sua equipe venceu!/);
     assert.equal(page.elements.get('returnHome').hidden, false);
+    const finalBeforeLeave = structuredClone(game.r.result), roundsBeforeLeave = structuredClone(game.r.rounds);
     page.click('returnHome'); assert.equal(page.storage.has('sp_session'), false);
+    assert.equal(page.closed, true); assert.equal(page.screen(), 's-home');
+    assert.equal(game.r.players.has(first), false);
+    assert.equal(game.socks.has('Primeiro-socket'), false);
+    assert.equal(game.adminState().players.some(p => p.pid === first), false);
+    assert.deepEqual(game.r.result, finalBeforeLeave); assert.deepEqual(game.r.rounds, roundsBeforeLeave);
   }
 
   // Eliminados e perdedores de desempates aguardam o vencedor da competição.
@@ -389,6 +408,7 @@ retryClient.close();
     const game = createRoom(mode), loser = join(game, 'Eliminado', 'and'), b = join(game, 'Líder B', 'or'), c = join(game, 'Líder C', 'xor');
     call(game, 'admin:start'); finishPlayers(game, [b, c]); nextRound(game);
     const page = playerPage(game, loser); page.snapshot();
+    assert.equal(call(game, 'player:leave', {}, game.r.players.get(loser).sid).ok, false);
     assert.equal(page.elements.get('leaveSpectate').hidden, true);
     page.click('leaveSpectate'); assert.equal(page.screen(), 's-spectate');
   }
