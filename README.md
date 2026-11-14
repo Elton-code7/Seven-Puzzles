@@ -138,6 +138,8 @@ Parar retorna todos à sala de espera. Remoções ficam disponíveis no lobby e 
 
 Quem está fora da disputa acompanha apenas os participantes ativos. O retorno à página inicial fica disponível após o resultado final. No modo em grupo, integrantes das outras equipes também podem voltar ao início depois que o administrador inicia a final individual; os finalistas aguardam o resultado. Ao voltar ao início, o participante sai da sala, tem a sessão encerrada e é removido imediatamente da lista de participantes do administrador. Os resultados e o histórico das rodadas concluídas são preservados. Se o administrador encerrar a partida, todos voltam automaticamente à página inicial. Salas expiram após **8 horas** de sua criação.
 
+Na tela de espera com QR code, o botão **Excluir sala**, no canto superior direito, encerra a sala definitivamente após confirmação. Todos são desconectados; dados de participantes, histórico, temporizadores e alarme são removidos. Permanece apenas uma marca de encerramento para que o código antigo exiba **“Esta sala foi encerrada pelo administrador”** e não seja reutilizado. A ação é exclusiva do administrador e fica indisponível durante partidas.
+
 ## Modo teste
 
 Acesse `/teste.html` para:

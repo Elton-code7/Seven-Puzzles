@@ -12,7 +12,7 @@ import worker from './src/worker.js';
 const rooms = [], env = { ADMIN_USERNAME: 'SevenEltonAdmin', ADMIN_PASSWORD: 'test-password' };
 function createRoom(mode = 'groups') {
   const values = new Map();
-  const storage = { async get(k) { return values.get(k); }, async put(k,v) { values.set(k, structuredClone(v)); }, async setAlarm() {}, async deleteAll() { values.clear(); } };
+  const storage = { async get(k) { return values.get(k); }, async put(k,v) { values.set(k, structuredClone(v)); }, async setAlarm(at) { this.alarmAt = at; }, async deleteAlarm() { this.alarmAt = null; }, async delete(keys) { for (const key of Array.isArray(keys) ? keys : [keys]) values.delete(key); }, async deleteAll() { values.clear(); } };
   const room = new Room({ storage }, env); rooms.push(room);
   room.r = room.blank('ABCDE'); room.r.config.mode = mode;
   room.r.admin = 'admin'; room.messages = [];
@@ -428,5 +428,37 @@ retryClient.close();
     assert.equal(page.elements.get('homeErr').textContent, 'Encerrada pelo administrador.');
   }
 
-  console.log('✅ Banco, formatação, 90s, bônus, três modos, eliminação, desempates, histórico persistido, espectadores, permissões, reconexão e controles administrativos passaram.');
+  // Exclusão definitiva: somente admin no lobby, sem dados de jogadores ou timers restantes.
+  const deleted = createRoom(), deletedPid = join(deleted, 'Participante', 'and');
+  const deletedPage = playerPage(deleted, deletedPid);
+  assert.equal(call(deleted, 'admin:deleteRoom', {}, 'Participante-socket').ok, false);
+  join(deleted, 'Outra pessoa', 'or'); call(deleted, 'admin:start');
+  let deleteResult;
+  await deleted.H['admin:deleteRoom'](deleted.socks.get('admin'), {}, r => { deleteResult = r; });
+  assert.equal(deleteResult.ok, false); assert.equal(deleted.r.phase, 'question');
+  deleted.stopGame();
+  await deleted.ctx.storage.put('init', Date.now());
+  await deleted.ctx.storage.setAlarm(Date.now() + 100000);
+  await deleted.persist();
+  const closedSockets = [];
+  for (const s of deleted.socks.values()) s.ws.close = () => closedSockets.push(s.id);
+  await deleted.onMessage(deleted.socks.get('admin'), { data: JSON.stringify({ e: 'admin:deleteRoom', a: [{}], id: 99 }) });
+  assert.equal(deleted.messages.find(m => m.r === 99)?.d.ok, true);
+  assert.equal(closedSockets.length, 3); assert.equal(deleted.socks.size, 0); assert.equal(deleted.r, null);
+  assert.equal(await deleted.ctx.storage.get('closed'), true);
+  assert.equal(await deleted.ctx.storage.get('init'), undefined);
+  assert.equal(await deleted.ctx.storage.get('state'), undefined);
+  assert.equal(deleted.ctx.storage.alarmAt, null);
+  const notice = deleted.messages.find(m => m.to === 'Participante-socket' && m.e === 'room:closed');
+  deletedPage.receive(notice.e, notice.a[0]);
+  assert.equal(deletedPage.screen(), 's-home'); assert.equal(deletedPage.closed, true);
+  assert.equal(deletedPage.storage.has('sp_session'), false);
+  assert.match(deletedPage.elements.get('homeErr').textContent, /encerrada/);
+  const recreated = new Room({ storage: deleted.ctx.storage }, env);
+  const closedCheck = await (await recreated.fetch(new Request('https://room/check?code=ABCDE'))).json();
+  assert.equal(closedCheck.ok, false); assert.match(closedCheck.error, /encerrada/);
+  assert.equal((await recreated.fetch(new Request('https://room/init?code=ABCDE'))).status, 409);
+  await recreated.alarm(); assert.equal(await deleted.ctx.storage.get('closed'), true);
+
+  console.log('✅ Banco, formatação, 90s, bônus, três modos, eliminação, desempates, histórico persistido, espectadores, permissões, reconexão, exclusão de salas e controles administrativos passaram.');
 } finally { for (const room of rooms) room.clearAllTimers(); }

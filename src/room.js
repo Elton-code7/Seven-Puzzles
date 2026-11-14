@@ -71,7 +71,7 @@ export class Room {
   }
 
   async persist() {
-    if (!this.r) return;
+    if (!this.r || this.closed) return;
     try { await this.ctx.storage.put('state', this.serializable()); } catch (e) { console.error('Falha ao persistir a sala:', e); }
   }
 
@@ -90,6 +90,17 @@ export class Room {
 
   async fetch(req) {
     const url = new URL(req.url), code = norm(url.searchParams.get('room') || url.searchParams.get('code'));
+    if (this.closed || await this.ctx.storage.get('closed')) {
+      this.closed = true;
+      if (req.headers.get('Upgrade') === 'websocket') {
+        const [client, server] = Object.values(new WebSocketPair()); server.accept();
+        server.send(JSON.stringify({ e: 'room:closed', a: [{ message: 'Esta sala foi encerrada pelo administrador.' }] }));
+        server.close(1000, 'Sala encerrada');
+        return new Response(null, { status: 101, webSocket: client });
+      }
+      if (url.pathname === '/check') return json({ ok: false, error: 'Esta sala foi encerrada pelo administrador.' });
+      return new Response('Sala encerrada', { status: url.pathname === '/init' ? 409 : 410 });
+    }
     if (url.pathname === '/init') {
       if (await this.ctx.storage.get('init')) return new Response('exists', { status: 409 });
       await this.ctx.storage.put('init', Date.now());
@@ -111,6 +122,7 @@ export class Room {
   }
 
   async alarm() {
+    if (this.closed || await this.ctx.storage.get('closed')) return;
     if (this.r?.contest) for (const timer of this.r.contest.timers.values()) clearTimeout(timer);
     if (this.r?.betweenTimer) clearTimeout(this.r.betweenTimer);
     for (const s of this.socks.values()) try { s.ws.close(1000, 'sala encerrada'); } catch (e) { }
@@ -126,10 +138,10 @@ export class Room {
 
   async onMessage(s, ev) {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
-    if (!m || typeof m !== 'object' || !Object.hasOwn(this.H, m.e) || !this.r) return;
+    if (!m || typeof m !== 'object' || !Object.hasOwn(this.H, m.e) || !this.r || this.closed) return;
     const h = this.H[m.e];
     const cb = m.id ? res => { try { s.ws.send(JSON.stringify({ r: m.id, d: res })); } catch (e) { } } : () => { };
-    try { h(s, Array.isArray(m.a) ? m.a[0] : undefined, cb); }
+    try { await h(s, Array.isArray(m.a) ? m.a[0] : undefined, cb); }
     catch (e) { console.error(e); cb({ ok: false, error: 'Ocorreu um erro interno ao processar a ação.' }); }
     await this.persist();
   }
@@ -520,9 +532,27 @@ export class Room {
   }
 
   /* ---------- eventos recebidos ---------- */
+  async deleteRoom(cb) {
+    if (this.closed || this.r.phase !== 'lobby') return cb({ ok: false, error: 'Exclua a sala na tela de espera, antes de iniciar uma partida.' });
+    this.closed = true;
+    try { await this.ctx.storage.put('closed', true); }
+    catch (error) { this.closed = false; throw error; }
+    this.clearAllTimers();
+    for (const p of this.r.players.values()) clearTimeout(p.dc);
+    // Preserva somente a marca de encerramento para impedir a reutilização do código.
+    await this.ctx.storage.delete(['init', 'state']);
+    await this.ctx.storage.deleteAlarm();
+    cb({ ok: true });
+    for (const s of this.socks.values()) this.send(s.id, 'room:closed', { message: 'Esta sala foi encerrada pelo administrador.' });
+    this.r = null;
+    for (const s of this.socks.values()) try { s.ws.close(1000, 'Sala encerrada'); } catch (e) { }
+    this.socks.clear();
+  }
+
   initHandlers() {
-    const adm = fn => (s, d, cb) => { if (this.r.admin === s.id) fn(s, d, cb); else cb({ ok: false, error: 'Ação exclusiva do admin.' }); };
+    const adm = fn => (s, d, cb) => { if (this.r.admin === s.id) return fn(s, d, cb); else cb({ ok: false, error: 'Ação exclusiva do admin.' }); };
     this.H = {
+      'admin:deleteRoom': adm((s, d, cb) => this.deleteRoom(cb)),
       'admin:resume': (s, d, cb) => {
         const r = this.r;
         if (!this.env.ADMIN_PASSWORD || !this.env.ADMIN_USERNAME || !d || d.username !== this.env.ADMIN_USERNAME || d.password !== this.env.ADMIN_PASSWORD || norm(d.code) !== r.code) return cb({ ok: false });

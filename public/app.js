@@ -139,6 +139,7 @@ function returnToHome(message = '') {
   show('s-home');
 }
 socket.on('game:stopped', p => returnToHome(p?.message || 'A partida foi encerrada.'));
+socket.on('room:closed', p => returnToHome(p?.message || 'Esta sala foi encerrada pelo administrador.'));
 
 let leaving = false;
 function leaveRoom() {

@@ -92,6 +92,22 @@ $('#stop').onclick = () => { if (confirm('Parar a partida e voltar todos para a 
 $('#stopBetween').onclick = () => { if (confirm('Encerrar esta disputa e voltar para a sala de espera?')) socket.emit('admin:stop'); };
 $('#finalStart').onclick = () => socket.emit('admin:finalStart', r => { if (r && !r.ok) alert(r.error); });
 $('#again').onclick = () => socket.emit('admin:newgame');
+$('#deleteRoom').onclick = () => {
+  if ($('#deleteRoom').disabled || !confirm('Excluir esta sala? Todos serão desconectados e este código não poderá ser usado novamente.')) return;
+  $('#deleteRoom').disabled = true; $('#deleteRoomError').textContent = '';
+  socket.emit('admin:deleteRoom', {}, r => {
+    $('#deleteRoom').disabled = false;
+    if (!r?.ok) $('#deleteRoomError').textContent = r?.error || 'Não foi possível excluir a sala. Tente novamente.';
+  });
+};
+socket.on('room:closed', p => {
+  socket.close(); sessionStorage.removeItem('sp_admin');
+  clearInterval(window.__adminBetweenTick);
+  code = ''; lastQR = ''; latestState = null;
+  $('#deleteRoom').disabled = false; $('#deleteRoomError').textContent = '';
+  $('#connectionStatus').hidden = true; view('login');
+  $('#loginErr').textContent = p?.message || 'Sala encerrada. Você pode criar uma nova sala.';
+});
 
 function rank(r) {
   if (!r?.list?.length) return '<p class="muted">Ainda não há pontuação registrada.</p>';

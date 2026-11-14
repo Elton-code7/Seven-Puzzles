@@ -127,6 +127,9 @@ select.input{appearance:auto}
 
 /* admin */
 .admin{max-width:1100px;margin:0 auto;padding:18px}
+.lobby-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px}
+.delete-room{display:inline-flex;align-items:center;gap:8px;color:var(--bad)!important}
+.delete-room svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .admin-home{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--cyan);font-weight:700;text-decoration:none}
 .admin-home svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .admin-home:hover{background:var(--card2);border-color:var(--cyan)}
