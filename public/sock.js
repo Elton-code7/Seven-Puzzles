@@ -19,6 +19,7 @@ function io() {
       queued.forEach(transmit);
     };
     w.onmessage = m => {
+      if (w !== ws || !want) return;
       let d; try { d = JSON.parse(m.data); } catch (e) { return; }
       if (d.r) { const f = acks[d.r]; delete acks[d.r]; if (f) f(d.d); }
       else fire(d.e, ...(d.a || []));

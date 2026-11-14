@@ -12,10 +12,11 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="sessionLoading" class="session-loading" role="status" aria-live="polite"><img src="/favicon.svg" alt="" width="64" height="64"><p id="loadingText">Carregando Seven Puzzles…</p></div>
 <p id="connectionStatus" class="connection-status" role="status" aria-live="polite" hidden>Conexão interrompida. Tentando reconectar; mantenha esta aba aberta.</p>
 
 <!-- INÍCIO -->
-<main id="s-home" class="screen">
+<main id="s-home" class="screen" hidden>
   <nav class="nav"><a href="#entrar">Entrar</a><a href="#como">Como funciona</a><a href="#niveis">Níveis</a><a href="#pontos">Pontuação</a><a href="#conectivos">Conectivos lógicos</a><a class="dev-link" href="/admin.html" aria-label="Acesso administrativo">&lt;/&gt; Admin</a></nav>
   <div class="wrap">
     <header class="hero">
@@ -35,6 +36,7 @@
         <button id="scan" class="btn alt block">Escanear QR code</button>
         <p id="homeErr" class="err center" role="alert"></p>
       </div>
+      <a class="test-launch" href="/teste.html"><span class="test-launch-icon" aria-hidden="true">▷</span><span><strong>Testar as questões</strong><small>Explore os desafios e os modos de jogo sem entrar em uma sala.</small></span><span class="test-launch-arrow" aria-hidden="true">→</span></a>
     </section>
 
     <section id="como" class="block">

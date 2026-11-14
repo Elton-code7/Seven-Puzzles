@@ -9,7 +9,13 @@ const STAGE = { main: 'Partida principal', tiebreak: 'Desempate', final: 'Final 
 let latestState;
 let username = '', pw = '', code = '', tick, lastQR = '';
 const panels = ['login', 'lobby', 'game', 'between', 'end'];
-const view = id => panels.forEach(p => $('#' + p).hidden = p !== id);
+const view = id => { panels.forEach(p => $('#' + p).hidden = p !== id); $('#sessionLoading').hidden = true; };
+function clearRoomView() {
+  sessionStorage.removeItem('sp_admin'); socket.close();
+  code = ''; lastQR = ''; latestState = null;
+  for (const id of ['code', 'qr', 'url', 'teams', 'gParticipants', 'gRank', 'bBody', 'eBody', 'eRank']) $('#' + id).innerHTML = '';
+  $('#connectionStatus').hidden = true;
+}
 
 let creating = false;
 function setPasswordVisible(visible) {
@@ -47,22 +53,25 @@ $('#username').onkeydown = e => { if (e.key === 'Enter') $('#pw').focus(); };
 socket.on('connect', () => {
   if (username && pw && code) socket.emit('admin:resume', { username, password: pw, code }, r => {
     if (!r.ok) {
-      sessionStorage.removeItem('sp_admin'); socket.close(); view('login');
+      clearRoomView(); view('login');
       $('#loginErr').textContent = 'Não foi possível autenticar o painel administrativo.';
     }
   });
 });
 socket.on('failed', () => {
+  $('#loadingText').textContent = 'Conexão instável. Tentando recuperar sua sala…';
   $('#loginErr').textContent = 'Conexão instável. O painel está tentando se reconectar automaticamente; mantenha esta aba aberta.';
 });
-try {
+function restoreAdmin() { try {
   const saved = JSON.parse(sessionStorage.getItem('sp_admin'));
   if (saved) {
     username = saved.username || ''; pw = saved.pw || ''; code = saved.code || '';
     $('#username').value = username; $('#pw').value = pw;
-    if (username && pw && code) socket.open(code);
+    if (username && pw && code) { $('#loadingText').textContent = 'Restaurando sua sala…'; socket.open(code); return; }
   }
 } catch (e) { sessionStorage.removeItem('sp_admin'); }
+  clearRoomView(); view('login');
+}
 
 $('#cApply').onclick = () => socket.emit('admin:config', {
   mode: $('#cMode').value, locked: $('#cLocked').checked, numTeams: +$('#cTeams').value, min: +$('#cMin').value, max: +$('#cMax').value
@@ -101,7 +110,7 @@ $('#deleteRoom').onclick = () => {
   });
 };
 socket.on('room:closed', p => {
-  socket.close(); sessionStorage.removeItem('sp_admin');
+  clearRoomView();
   clearInterval(window.__adminBetweenTick);
   code = ''; lastQR = ''; latestState = null;
   $('#deleteRoom').disabled = false; $('#deleteRoomError').textContent = '';
@@ -221,3 +230,5 @@ socket.on('admin:state', s => {
     $('#eRank').innerHTML = rank({ kind: r.kind, list: r.ranking });
   }
 });
+
+restoreAdmin();

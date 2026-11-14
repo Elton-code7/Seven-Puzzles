@@ -98,7 +98,7 @@ export class Room {
         server.close(1000, 'Sala encerrada');
         return new Response(null, { status: 101, webSocket: client });
       }
-      if (url.pathname === '/check') return json({ ok: false, error: 'Esta sala foi encerrada pelo administrador.' });
+      if (url.pathname === '/check') return json({ ok: false, closed: true, error: 'Esta sala foi encerrada pelo administrador.' });
       return new Response('Sala encerrada', { status: url.pathname === '/init' ? 409 : 410 });
     }
     if (url.pathname === '/init') {

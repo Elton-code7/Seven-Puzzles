@@ -67,12 +67,15 @@ function playerPage(room, pid) {
   const context = {
     io: () => socket, CAT: CATNAMES, questionMarkup, inline, participantMarkup, MODE_RULES, MODES,
     document: { querySelector: selector => elements.get(selector.slice(1)), querySelectorAll: selector => selector === '.screen' ? [...elements.values()].filter(el => el.id.startsWith('s-')) : [] },
-    window: { scrollTo() {} }, location: { search: '', href: '/' }, URLSearchParams,
+    window: { scrollTo() {} }, location: { search: '?sala=ABCDE', pathname: '/', hash: '', href: '/' }, URLSearchParams,
+    history: { replaceState(state, title, url) { context.location.href = url; context.location.search = ''; } },
     localStorage: { getItem: key => storage.get(key) || null, setItem: (key, val) => storage.set(key, val), removeItem: key => storage.delete(key) },
     setInterval: () => 1, clearInterval() {}, performance: { now: () => 0 }
   };
   const source = readFileSync(new URL('./public/app.js', import.meta.url), 'utf8').replace(/^import .*;\n/gm, '');
   vm.runInNewContext(source, context);
+  assert.equal(elements.get('sessionLoading').hidden, false, 'A restauração deve aguardar o servidor.');
+  assert.equal(elements.get('s-home').hidden, true, 'A página inicial não deve piscar durante a restauração.');
   const receive = (event, data) => { for (const fn of events.get(event) || []) fn(data); };
   receive('connect');
   return { elements, storage, receive, get closed() { return closed; },
@@ -338,7 +341,11 @@ retryTimers.shift()();
 const secondSocket = fakeSockets[1];
 secondSocket.open();
 assert.deepEqual(secondSocket.sent.map(x => x.e), ['admin:resume', 'admin:pause']);
+let staleMessages = 0;
+retryClient.on('lobby:update', () => staleMessages++);
 retryClient.close();
+secondSocket.onmessage({ data: JSON.stringify({ e: 'lobby:update', a: [{}] }) });
+assert.equal(staleMessages, 0, 'Mensagens de uma conexão encerrada não podem reabrir a sala.');
 
   // Terminar antes dos outros não libera a saída em nenhuma modalidade.
   const completeOne = (game, pid, correct = false) => {
@@ -397,6 +404,8 @@ retryClient.close();
     const finalBeforeLeave = structuredClone(game.r.result), roundsBeforeLeave = structuredClone(game.r.rounds);
     page.click('returnHome'); assert.equal(page.storage.has('sp_session'), false);
     assert.equal(page.closed, true); assert.equal(page.screen(), 's-home');
+    assert.equal(page.elements.get('code').value, '');
+    assert.equal(page.elements.get('sessionLoading').hidden, true);
     assert.equal(game.r.players.has(first), false);
     assert.equal(game.socks.has('Primeiro-socket'), false);
     assert.equal(game.adminState().players.some(p => p.pid === first), false);
@@ -454,6 +463,7 @@ retryClient.close();
   assert.equal(deletedPage.screen(), 's-home'); assert.equal(deletedPage.closed, true);
   assert.equal(deletedPage.storage.has('sp_session'), false);
   assert.match(deletedPage.elements.get('homeErr').textContent, /encerrada/);
+  assert.equal(deletedPage.elements.get('code').value, '');
   const recreated = new Room({ storage: deleted.ctx.storage }, env);
   const closedCheck = await (await recreated.fetch(new Request('https://room/check?code=ABCDE'))).json();
   assert.equal(closedCheck.ok, false); assert.match(closedCheck.error, /encerrada/);

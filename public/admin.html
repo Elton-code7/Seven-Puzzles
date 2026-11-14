@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="sessionLoading" class="session-loading" role="status" aria-live="polite"><img src="/favicon.svg" alt="" width="64" height="64"><p id="loadingText">Carregando painel…</p></div>
 <p id="connectionStatus" class="connection-status" role="status" aria-live="polite" hidden>Conexão interrompida. Tentando reconectar; mantenha esta aba aberta.</p>
 <div class="admin">
   <a class="admin-home" href="/" aria-label="Voltar à página inicial" title="Voltar à página inicial">
@@ -17,7 +18,7 @@
   </a>
   <header class="center" style="padding:10px 0 18px"><div class="title sm">SEVEN PUZZLES</div><p class="muted">Painel do admin</p></header>
 
-  <section id="login" class="narrow" style="padding-top:0">
+  <section id="login" class="narrow" style="padding-top:0" hidden>
     <div class="card glow stack">
       <h2>Criar uma sala</h2>
       <label for="username">Usuário do admin</label><input id="username" class="input" placeholder="Usuário do admin" autocomplete="username">
@@ -28,7 +29,7 @@
       <button id="create" class="btn block">Gerar código da sala</button>
       <p id="loginErr" class="err" role="alert"></p>
     </div>
-    <p class="center" style="margin-top:16px"><a href="/teste.html">Só quero testar as perguntas (modo teste) →</a></p>
+    <a class="test-launch" href="/teste.html"><span class="test-launch-icon" aria-hidden="true">▷</span><span><strong>Testar as questões</strong><small>Explore os desafios e os modos de jogo sem criar uma sala.</small></span><span class="test-launch-arrow" aria-hidden="true">→</span></a>
   </section>
 
   <section id="lobby" hidden>
@@ -58,7 +59,7 @@
         <div class="card"><h2>Participantes <span id="count" class="muted" style="font-size:1rem"></span></h2>
           <p class="muted" style="font-size:.9rem">Remova participantes individualmente ou esvazie um grupo inteiro.</p>
           <button id="balance" class="btn ghost block" style="margin-top:8px">Distribuir participantes equilibradamente</button><p id="capacity" class="muted"></p><div id="teams" class="grid" style="margin-top:12px"></div></div>
-        <div class="card"><button id="start" class="btn block">Iniciar partida</button><p id="startMsg" class="err center" style="margin-top:8px"></p><p class="center" style="margin-top:8px"><a href="/teste.html" target="_blank" rel="noopener">Abrir o modo teste das perguntas</a></p></div>
+        <div class="card"><button id="start" class="btn block">Iniciar partida</button><p id="startMsg" class="err center" style="margin-top:8px"></p><a class="test-launch" href="/teste.html" target="_blank" rel="noopener"><span class="test-launch-icon" aria-hidden="true">▷</span><span><strong>Testar as questões</strong><small>Abre em outra aba e mantém sua sala disponível.</small></span><span class="test-launch-arrow" aria-hidden="true">↗</span></a></div>
       </div>
     </div>
   </section>

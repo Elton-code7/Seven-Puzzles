@@ -12,15 +12,22 @@ const DIFF = [['Fácil', '😄', '#34d399'], ['Médio', '🤔', '#fbbf24']];
 
 const STAGE = { main: 'Partida principal', tiebreak: 'Desempate', final: 'Final individual', elimination: 'Eliminação entre equipes' };
 const save = () => localStorage.setItem('sp_session', JSON.stringify({ code: S.code, pid: S.pid, token: S.token, name: S.name, team: S.team }));
-const show = id => { $$('.screen').forEach(e => e.hidden = e.id !== id); window.scrollTo(0, 0); };
+const show = id => { $$('.screen').forEach(e => e.hidden = e.id !== id); $('#sessionLoading').hidden = true; window.scrollTo(0, 0); };
+function clearRoomLink() {
+  const params = new URLSearchParams(location.search); params.delete('sala');
+  history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
+}
 let tick;
 
 /* ---------- entrar na sala ---------- */
 async function checkCode(code) {
   code = String(code || '').trim().toUpperCase();
-  if (code.length !== 5) return ($('#homeErr').textContent = 'O código tem 5 caracteres.');
-  let res; try { res = await (await fetch('/api/check?code=' + encodeURIComponent(code))).json(); } catch (e) { return ($('#homeErr').textContent = 'Sem conexão com o servidor. Tente de novo.'); }
-  if (!res.ok) return ($('#homeErr').textContent = res.error);
+  if (code.length !== 5) { show('s-home'); return ($('#homeErr').textContent = 'O código tem 5 caracteres.'); }
+  let res; try { res = await (await fetch('/api/check?code=' + encodeURIComponent(code))).json(); } catch (e) { show('s-home'); return ($('#homeErr').textContent = 'Sem conexão com o servidor. Tente de novo.'); }
+  if (!res.ok) {
+    if (res.closed) return returnToHome(res.error);
+    clearRoomLink(); show('s-home'); return ($('#homeErr').textContent = res.error);
+  }
   if (S.pid) { socket.close(); localStorage.removeItem('sp_session'); S.pid = null; S.resume = null; }
   $('#homeErr').textContent = ''; S.code = res.code; S.teams = res.teams; S.cfg = res.config; S.pick = null; $('#jRules').textContent = rules(S.cfg);
   $('#jCode').textContent = res.code; renderJoinTeams(); show('s-join'); socket.open(res.code);
@@ -41,7 +48,7 @@ function renderJoinTeams() {
 }
 $('#go').onclick = () => checkCode($('#code').value);
 $('#code').onkeydown = e => { if (e.key === 'Enter') checkCode(e.target.value); };
-$('#back').onclick = () => { socket.close(); show('s-home'); };
+$('#back').onclick = () => returnToHome();
 $('#join').onclick = () => {
   socket.emit('player:join', { code: S.code, name: $('#name').value, team: S.pick }, res => {
     if (!res.ok) { $('#joinErr').textContent = res.error; return socket.emit('room:check', S.code, r => { if (r.ok) { S.teams = r.teams; S.cfg = r.config; if (!S.teams.some(t => t.id === S.pick)) S.pick = null; $('#jRules').textContent = rules(S.cfg); renderJoinTeams(); } }); }
@@ -132,7 +139,10 @@ socket.on('game:complete', p => {
 });
 function returnToHome(message = '') {
   clearInterval(tick); localStorage.removeItem('sp_session'); socket.close();
-  Object.assign(S, { pid: null, token: null, resume: null, code: null, spectatorHome: false });
+  clearRoomLink();
+  Object.assign(S, { pid: null, token: null, resume: null, code: null, name: null, team: null, pick: null, teams: [], spectatorHome: false });
+  $('#code').value = ''; $('#name').value = '';
+  for (const id of ['jCode', 'lCode', 'lName', 'jTeams', 'lTeams', 'spPlayers', 'spRank', 'eBody', 'eRank', 'bBody', 'rBody', 'rRank', 'qText', 'qOpts']) $('#' + id).innerHTML = '';
   spectator = null; finalResult = null;
   $('#watchAgain').hidden = true; $('#connectionStatus').hidden = true;
   $('#homeErr').textContent = message;
@@ -202,8 +212,7 @@ $('#returnHome').onclick = () => { if (finalResult) leaveRoom(); };
 
 /* ---------- conexão e reconexão ---------- */
 function expiredSession() {
-  localStorage.removeItem('sp_session'); socket.close(); S.pid = null; S.resume = null; clearInterval(tick); show('s-home');
-  $('#homeErr').textContent = 'Sua sessão expirou ou foi removida. Entre novamente com o código da sala.';
+  returnToHome('Sua sessão expirou ou foi removida. Entre novamente com o código da sala.');
 }
 const sala = new URLSearchParams(location.search).get('sala');
 socket.on('connect', () => {
@@ -219,10 +228,12 @@ socket.on('connect', () => {
   }
 });
 socket.on('failed', () => {
+  $('#loadingText').textContent = 'Conexão instável. Tentando recuperar sua sessão…';
   $('#homeErr').textContent = 'Conexão instável. Tentando reconectar à sala automaticamente; mantenha esta aba aberta.';
 });
 (function init() {
   let ses = null; try { ses = JSON.parse(localStorage.getItem('sp_session')); } catch (e) { }
-  if (ses && ses.pid && (!sala || sala.toUpperCase() === ses.code)) { S.resume = ses; socket.open(ses.code); }
+  if (ses && ses.pid && ses.code && ses.token && (!sala || sala.toUpperCase() === ses.code)) { $('#loadingText').textContent = 'Restaurando sua partida…'; S.resume = ses; socket.open(ses.code); }
   else if (sala) { $('#code').value = sala.toUpperCase(); checkCode(sala); }
+  else { localStorage.removeItem('sp_session'); show('s-home'); }
 })();
