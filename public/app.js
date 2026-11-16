@@ -12,7 +12,7 @@ const DIFF = [['Fácil', '😄', '#34d399'], ['Médio', '🤔', '#fbbf24']];
 
 const STAGE = { main: 'Partida principal', tiebreak: 'Desempate', final: 'Final individual', elimination: 'Eliminação entre equipes' };
 const save = () => localStorage.setItem('sp_session', JSON.stringify({ code: S.code, pid: S.pid, token: S.token, name: S.name, team: S.team }));
-const show = id => { $$('.screen').forEach(e => e.hidden = e.id !== id); $('#sessionLoading').hidden = true; window.scrollTo(0, 0); };
+const show = id => { if (!['s-lobby', 's-join'].includes(id)) { S.editingTeam = false; S.lobby = null; } $$('.screen').forEach(e => e.hidden = e.id !== id); $('#sessionLoading').hidden = true; window.scrollTo(0, 0); };
 function clearRoomLink() {
   const params = new URLSearchParams(location.search); params.delete('sala');
   history.replaceState(null, '', location.pathname + (params.size ? '?' + params.toString() : '') + location.hash);
@@ -35,21 +35,36 @@ async function checkCode(code) {
 function teamBtn(t, opts = {}) {
   const n = t.members.length, full = n >= S.cfg.max && !opts.mine;
   const need = n > 0 && n < S.cfg.min ? ` · faltam ${S.cfg.min - n}` : '';
-  return `<button class="team ${opts.sel ? 'sel' : ''}" data-id="${t.id}" style="--c:${t.color}" ${full ? 'disabled' : ''}>
+  const tag = opts.readonly ? 'div' : 'button';
+  return `<${tag} class="team ${opts.readonly ? 'team-summary' : ''} ${opts.sel ? 'sel' : ''}" data-id="${t.id}" style="--c:${t.color}" ${!opts.readonly && full ? 'disabled' : ''}>
     <b>${t.name}</b><small>${n}/${S.cfg.max}${need}</small>
-    ${opts.list ? `<ul class="mlist">${t.members.map(m => `<li class="${m.name === S.name ? 'me' : ''} ${m.online ? '' : 'off'}">${esc(m.name)}</li>`).join('')}</ul>` : ''}</button>`;
+    ${opts.list ? `<ul class="mlist">${t.members.map(m => `<li class="${m.name === S.name ? 'me' : ''} ${m.online ? '' : 'off'}">${esc(m.name)}</li>`).join('')}</ul>` : ''}</${tag}>`;
 }
 function renderJoinTeams() {
   $('#jMode').textContent = MODES[S.cfg.mode]?.name || ''; $('#jModeRules').textContent = MODE_RULES(S.cfg.mode);
   $('#jTeamTitle').hidden = S.cfg.mode === 'individual'; $('#jTeams').hidden = S.cfg.mode === 'individual';
-  $('#join').textContent = S.cfg.mode === 'individual' ? 'Entrar na disputa' : 'Entrar na equipe';
-  $('#jTeams').innerHTML = S.teams.map(t => teamBtn(t, { sel: S.pick === t.id })).join('');
+  $('#nameLabel').hidden = $('#name').hidden = !!S.editingTeam;
+  $('#back').textContent = S.editingTeam ? 'Cancelar troca' : 'Voltar';
+  $('#join').textContent = S.editingTeam ? 'Confirmar troca de equipe' : S.cfg.mode === 'individual' ? 'Entrar na disputa' : 'Entrar na equipe';
+  $('#jTeams').innerHTML = S.teams.map(t => teamBtn(t, { sel: S.pick === t.id, mine: !!S.pid && t.id === S.team })).join('');
   $$('#jTeams .team').forEach(b => b.onclick = () => { S.pick = b.dataset.id; renderJoinTeams(); });
 }
 $('#go').onclick = () => checkCode($('#code').value);
 $('#code').onkeydown = e => { if (e.key === 'Enter') checkCode(e.target.value); };
-$('#back').onclick = () => returnToHome();
+$('#back').onclick = () => {
+  if (S.editingTeam && S.lobby) { S.editingTeam = false; S.pick = S.team; renderLobby(S.lobby); }
+  else returnToHome();
+};
 $('#join').onclick = () => {
+  if (S.editingTeam) {
+    if ($('#join').disabled) return;
+    $('#join').disabled = true;
+    return socket.emit('player:switch', { team: S.pick }, res => {
+      $('#join').disabled = false;
+      if (!res?.ok) { $('#joinErr').textContent = res?.error || 'Não foi possível trocar de equipe.'; return; }
+      S.editingTeam = false; S.team = res.team; save();
+    });
+  }
   socket.emit('player:join', { code: S.code, name: $('#name').value, team: S.pick }, res => {
     if (!res.ok) { $('#joinErr').textContent = res.error; return socket.emit('room:check', S.code, r => { if (r.ok) { S.teams = r.teams; S.cfg = r.config; if (!S.teams.some(t => t.id === S.pick)) S.pick = null; $('#jRules').textContent = rules(S.cfg); renderJoinTeams(); } }); }
     Object.assign(S, { pid: res.pid, token: res.token, name: res.name, team: res.team }); save();
@@ -72,7 +87,8 @@ async function stopScan() { $('#modal').hidden = true; try { await qr.stop(); qr
 $('#stopScan').onclick = stopScan;
 
 /* ---------- sala de espera ---------- */
-socket.on('lobby:update', st => {
+function renderLobby(st) {
+  S.lobby = st;
   S.cfg = st.config; S.teams = st.teams;
   if (!S.pid) { $('#jRules').textContent = rules(S.cfg); renderJoinTeams(); return; }
   const me = S.cfg.mode === 'individual' ? st.players.find(p => p.pid === S.pid) : st.teams.flatMap(t => t.members.map(m => ({ ...m, t: t.id }))).find(m => m.pid === S.pid);
@@ -80,14 +96,21 @@ socket.on('lobby:update', st => {
   S.team = me.t || null; save(); S.spectatorHome = false; spectator = null; finalResult = null; $('#watchAgain').hidden = true;
   $('#lCode').textContent = S.code; $('#lName').textContent = S.name; clearInterval(tick);
   $('#lMode').textContent = MODES[S.cfg.mode].name; $('#lModeRules').textContent = MODE_RULES(S.cfg.mode);
-  $('#lHint').textContent = S.cfg.mode === 'individual' ? 'Todos disputam individualmente.' : S.cfg.locked ? 'As inscrições e trocas de equipe estão fechadas.' : 'Quer trocar de equipe? Toque em outra equipe abaixo.';
-  $('#lTeams').innerHTML = S.cfg.mode === 'individual' ? st.players.map(p => `<div class="card">${esc(p.name)} <small class="muted">${p.online ? 'online' : 'desconectado'}</small></div>`).join('') : st.teams.map(t => teamBtn(t, { sel: t.id === S.team, list: true, mine: t.id === S.team })).join('');
-  $$('#lTeams .team').forEach(b => { b.disabled = b.disabled || S.cfg.locked; b.onclick = () => {
-    if (b.dataset.id === S.team) return;
-    socket.emit('player:switch', { team: b.dataset.id }, r => { $('#lobErr').textContent = r && !r.ok ? r.error : ''; });
-  }; });
+  $('#lHint').textContent = S.cfg.mode === 'individual' ? 'Todos disputam individualmente.' : S.cfg.locked ? 'As inscrições e trocas de equipe estão fechadas.' : 'Equipe confirmada. Para mudar, use “Trocar de equipe” e confirme sua nova escolha.';
+  $('#changeTeam').hidden = S.cfg.mode === 'individual'; $('#changeTeam').disabled = S.cfg.locked;
+  $('#lTeams').innerHTML = S.cfg.mode === 'individual' ? st.players.map(p => `<div class="card">${esc(p.name)} <small class="muted">${p.online ? 'online' : 'desconectado'}</small></div>`).join('') : st.teams.map(t => teamBtn(t, { sel: t.id === S.team, list: true, readonly: true })).join('');
+  if (S.editingTeam && !S.cfg.locked && S.cfg.mode !== 'individual') { renderJoinTeams(); show('s-join'); return; }
+  S.editingTeam = false;
   show('s-lobby');
-});
+}
+socket.on('lobby:update', renderLobby);
+$('#changeTeam').onclick = () => {
+  if (!S.pid || !S.lobby || S.cfg.locked || S.cfg.mode === 'individual') return;
+  S.editingTeam = true; S.pick = S.team;
+  $('#jCode').textContent = S.code; $('#jRules').textContent = rules(S.cfg); $('#joinErr').textContent = ''; $('#join').disabled = false;
+  renderJoinTeams(); show('s-join');
+};
+$('#leaveLobby').onclick = () => { if (S.pid && S.lobby) leaveRoom(); };
 socket.on('player:kicked', () => { localStorage.removeItem('sp_session'); alert('Você foi removido da sala pelo professor.'); location.href = '/'; });
 
 /* ---------- perguntas ---------- */
@@ -155,11 +178,11 @@ let leaving = false;
 function leaveRoom() {
   if (leaving) return;
   leaving = true;
-  const buttons = [$('#leaveSpectate'), $('#returnHome')];
+  const buttons = [$('#leaveSpectate'), $('#returnHome'), $('#leaveLobby')];
   buttons.forEach(b => { b.disabled = true; b.textContent = 'Saindo da sala…'; });
   socket.emit('player:leave', {}, r => {
     leaving = false;
-    buttons.forEach(b => { b.disabled = false; b.textContent = 'Voltar à página inicial'; });
+    buttons.forEach(b => { b.disabled = false; b.textContent = b.id === 'leaveLobby' ? 'Sair da sala' : 'Voltar à página inicial'; });
     if (r?.ok) returnToHome();
     else alert(r?.error || 'Não foi possível sair da sala. Tente novamente.');
   });

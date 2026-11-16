@@ -437,6 +437,32 @@ assert.equal(staleMessages, 0, 'Mensagens de uma conexão encerrada não podem r
     assert.equal(page.elements.get('homeErr').textContent, 'Encerrada pelo administrador.');
   }
 
+  // Equipes no lobby são somente leitura. Troca exige abrir seleção e pode ser cancelada.
+  for (const mode of ['groups', 'elimination', 'individual']) {
+    const waiting = createRoom(mode), pid = join(waiting, 'Quem sai', 'and');
+    join(waiting, 'Quem fica', 'or');
+    const page = playerPage(waiting, pid); page.snapshot();
+    assert.doesNotMatch(page.elements.get('lTeams').innerHTML, /<button/);
+    assert.equal(page.elements.get('changeTeam').hidden, mode === 'individual');
+    if (mode !== 'individual') {
+      page.click('changeTeam'); assert.equal(page.screen(), 's-join');
+      assert.equal(page.elements.get('join').textContent, 'Confirmar troca de equipe');
+      assert.equal(page.elements.get('name').hidden, true);
+      page.click('back'); assert.equal(page.screen(), 's-lobby');
+      assert.equal(waiting.r.players.get(pid).team, 'and');
+      page.click('changeTeam'); waiting.r.config.locked = true; page.snapshot();
+      assert.equal(page.screen(), 's-lobby'); assert.equal(page.elements.get('changeTeam').disabled, true);
+      assert.equal(call(waiting, 'player:switch', { team: 'or' }, 'Quem sai-socket').ok, false);
+    }
+    waiting.messages.length = 0;
+    page.click('leaveLobby'); assert.equal(page.screen(), 's-home'); assert.equal(page.closed, true);
+    assert.equal(page.storage.has('sp_session'), false);
+    assert.equal(waiting.r.players.has(pid), false); assert.equal(waiting.socks.has('Quem sai-socket'), false);
+    const lobbyMessage = waiting.messages.find(m => m.to === 'Quem fica-socket' && m.e === 'lobby:update');
+    assert.equal(lobbyMessage.a[0].players.length, 1);
+    assert.equal(waiting.messages.filter(m => m.e === 'admin:state').at(-1).a[0].participants, 1);
+  }
+
   // Exclusão definitiva: somente admin no lobby, sem dados de jogadores ou timers restantes.
   const deleted = createRoom(), deletedPid = join(deleted, 'Participante', 'and');
   const deletedPage = playerPage(deleted, deletedPid);

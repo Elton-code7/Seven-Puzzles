@@ -94,7 +94,7 @@
 <main id="s-join" class="screen narrow" hidden>
   <div class="center"><div class="title sm">SEVEN PUZZLES</div><p class="muted">Sala <b id="jCode" class="math"></b></p></div>
   <div class="card stack" style="margin-top:18px">
-    <label for="name"><b>Seu nome</b></label>
+    <label id="nameLabel" for="name"><b>Seu nome</b></label>
     <input id="name" class="input" maxlength="16" placeholder="Como quer aparecer no ranking?" autocomplete="off">
     <h3 id="jMode"></h3><p id="jModeRules" class="muted"></p><b id="jTeamTitle">Sua equipe</b><p id="jRules" class="muted" style="font-size:.9rem"></p>
     <div id="jTeams" class="teams"></div>
@@ -110,6 +110,10 @@
     <p class="muted">Sala <b id="lCode" class="math"></b> · você é <b id="lName"></b></p>
     <p style="margin:14px 0 4px"><b>Aguardando o Administrador iniciar<span class="dots"></span></b></p>
     <h3 id="lMode"></h3><p id="lModeRules" class="muted"></p><p id="lHint" class="muted" style="font-size:.9rem"></p></div>
+  <div class="lobby-player-actions">
+    <button id="changeTeam" class="btn lobby-change" type="button">Trocar de equipe</button>
+    <button id="leaveLobby" class="btn lobby-leave" type="button">Sair da sala</button>
+  </div>
   <div id="lTeams" class="teams" style="margin-top:16px"></div>
   <p id="lobErr" class="err center"></p>
 </main>

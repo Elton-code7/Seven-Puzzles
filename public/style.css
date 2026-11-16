@@ -93,6 +93,12 @@ footer{padding:46px 0 30px;text-align:center;color:var(--muted);font-size:.88rem
 .team b{display:block}.team small{color:var(--muted)}
 .team.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--card))}
 .team:disabled{opacity:.4;cursor:not-allowed}
+.team-summary{cursor:default}
+.lobby-player-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.lobby-player-actions .btn{flex:1 1 180px;min-height:52px;border:2px solid;background:var(--card)}
+.lobby-change{color:var(--cyan);border-color:var(--cyan)!important;box-shadow:0 0 20px -12px var(--cyan)}
+.lobby-leave{color:var(--pink);border-color:var(--pink)!important;box-shadow:0 0 20px -12px var(--pink)}
+.lobby-player-actions .btn:hover:not(:disabled){background:var(--card2)}
 .mlist{list-style:none;padding:0;font-size:.9rem;color:var(--muted);margin-top:6px}
 .mlist li.me{color:var(--text);font-weight:700}.mlist li.off{opacity:.45}
 
