@@ -127,14 +127,16 @@ A câmera pode ser bloqueada pelo navegador em HTTP local. Nesse caso, use o có
 ## 🖥️ Usar o painel
 
 1. Informe usuário e senha; o botão de olho permite mostrar ou ocultar a senha digitada.
-2. Crie a sala e escolha o modo **antes de receber os participantes**.
+2. Crie a sala e escolha o modo. Você pode alterá-lo na sala de espera, mesmo com participantes conectados.
 3. Ajuste equipes e limites, quando aplicável. Compartilhe o código ou QR code.
 4. Opcionalmente, distribua os participantes equilibradamente ou bloqueie inscrições e trocas de equipe.
 5. Inicie a partida. Acompanhe progresso, conexão, pontuação e tempo de resposta.
 6. Use pausar, retomar, avançar ou parar conforme necessário. “Avançar todos” encerra as perguntas atuais sem resposta ou avança quem já está na explicação.
 7. No modo em grupo, autorize a final individual quando os integrantes estiverem prontos.
 
-Parar retorna todos à sala de espera. Remoções ficam disponíveis no lobby e durante as perguntas; algumas etapas bloqueiam remoções para manter o resultado consistente. O modo da sala só pode mudar enquanto estiver vazia.
+Remoções ficam disponíveis no lobby e durante as perguntas; algumas etapas bloqueiam remoções para manter o resultado consistente.
+
+Para trocar a modalidade antes do início, selecione o novo modo e clique em **Aplicar configurações**. Nomes, sessões e código da sala são mantidos. Ao passar de individual para equipes, os participantes recebem um aviso e escolhem apenas a equipe, sem cadastrar o nome novamente. O painel mostra quem ainda precisa escolher e impede o início enquanto houver pendências. Essa primeira escolha continua disponível com inscrições fechadas; trocas posteriores permanecem bloqueadas. Entre os dois modos de equipes, as equipes são mantidas. Ao passar para individual, as equipes deixam de ser usadas; o limite de participantes e as demais condições de início continuam valendo. Durante a partida, a modalidade não pode mudar.
 
 Quem está fora da disputa acompanha apenas os participantes ativos. O retorno à página inicial fica disponível após o resultado final. No modo em grupo, integrantes das outras equipes também podem voltar ao início depois que o administrador inicia a final individual; os finalistas aguardam o resultado. Ao voltar ao início, o participante sai da sala, tem a sessão encerrada e é removido imediatamente da lista de participantes do administrador. Os resultados e o histórico das rodadas concluídas são preservados. Se o administrador encerrar a partida, todos voltam automaticamente à página inicial. Salas expiram após **8 horas** de sua criação.
 

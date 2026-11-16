@@ -146,13 +146,15 @@ function renderLobby(s) {
     $('#cMode').value = c.mode; $('#cLocked').checked = c.locked;
     $('#cTeams').value = c.numTeams; $('#cMin').value = c.min; $('#cMax').value = c.max;
   }
-  modePreview(); $('#cMode').disabled = total > 0;
+  modePreview(); $('#cMode').disabled = false;
   $('#capacity').textContent = `${s.bankSize} questões no banco. ${c.mode === 'individual' ? `Até ${c.maxIndividual} participantes com perguntas diferentes entre todos.` : 'Até 5 por equipe; perguntas inéditas na equipe até o fim da partida.'}`;
   $('#teams').innerHTML = c.mode === 'individual' ? s.lobby.players.map(p => `<div class="card">${esc(p.name)} <small class="muted">${p.online ? 'online' : 'desconectado'}</small><button class="kick" data-pid="${esc(p.pid)}" title="Remover participante">✕</button></div>`).join('') : s.lobby.teams.map(t => `<div class="card" style="border-left:6px solid ${t.color};padding:12px">
     <b>${esc(t.name)}</b> <small class="muted">${t.members.length}/${s.lobby.config.max}</small>
     <ul class="mlist">${t.members.map(m => `<li class="${m.online ? '' : 'off'}">${esc(m.name)} <button class="kick" data-pid="${esc(m.pid)}" title="Remover participante">✕</button></li>`).join('') || '<li>—</li>'}</ul>
     <button class="remove-team btn ghost block" data-team="${t.id}" ${t.members.length ? '' : 'disabled'} style="margin-top:8px">Remover grupo</button>
   </div>`).join('');
+  const pending = s.lobby.players.filter(p => !p.team);
+  if (c.mode !== 'individual' && pending.length) $('#teams').innerHTML = `<div class="card mode-notice"><b>Aguardando escolha de equipe · ${pending.length}</b><ul class="mlist">${pending.map(p => `<li class="${p.online ? '' : 'off'}">${esc(p.name)} <button class="kick" data-pid="${esc(p.pid)}" title="Remover participante">✕</button></li>`).join('')}</ul></div>` + $('#teams').innerHTML;
   document.querySelectorAll('.kick').forEach(b => b.onclick = () => socket.emit('admin:kick', { pid: b.dataset.pid }, r => { if (r && !r.ok) $('#startMsg').textContent = r.error; }));
   document.querySelectorAll('.remove-team').forEach(b => b.onclick = () => {
     if (confirm('Remover todos os participantes deste grupo?')) socket.emit('admin:removeTeam', { team: b.dataset.team }, r => { if (r && !r.ok) $('#startMsg').textContent = r.error; });

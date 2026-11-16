@@ -95,6 +95,7 @@ footer{padding:46px 0 30px;text-align:center;color:var(--muted);font-size:.88rem
 .team:disabled{opacity:.4;cursor:not-allowed}
 .team-summary{cursor:default}
 .lobby-player-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.mode-notice{padding:14px 16px;border:1px solid var(--cyan);border-radius:12px;background:var(--card);color:var(--text)}
 .lobby-player-actions .btn{flex:1 1 180px;min-height:52px;border:2px solid;background:var(--card)}
 .lobby-change{color:var(--cyan);border-color:var(--cyan)!important;box-shadow:0 0 20px -12px var(--cyan)}
 .lobby-leave{color:var(--pink);border-color:var(--pink)!important;box-shadow:0 0 20px -12px var(--pink)}

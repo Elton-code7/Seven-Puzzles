@@ -171,7 +171,7 @@ export class Room {
   lobbyState() {
     return {
       phase: this.r.phase, config: { ...this.r.config, maxIndividual: individualCapacity(PLAN_MAIN) },
-      players: [...this.r.players.values()].map(p => ({ pid: p.pid, name: p.name, online: !!p.sid })),
+      players: [...this.r.players.values()].map(p => ({ pid: p.pid, name: p.name, team: p.team, online: !!p.sid })),
       teams: this.active().map(t => ({ ...t, members: this.members(t.id).map(p => ({ pid: p.pid, name: p.name, online: !!p.sid })) }))
     };
   }
@@ -186,6 +186,8 @@ export class Room {
       return this.capacityError([...this.r.players.keys()], PLAN_MAIN, true);
     }
     const { min } = this.r.config, used = this.active().filter(t => this.members(t.id).length > 0);
+    const pending = [...this.r.players.values()].filter(p => !this.active().some(t => t.id === p.team)).length;
+    if (pending) return `Falta escolher equipe: ${pending} ${pending === 1 ? 'participante' : 'participantes'}.`;
     const small = used.filter(t => this.members(t.id).length < min);
     if (small.length) return `${small.map(t => t.name).join(', ')} ${small.length > 1 ? 'têm' : 'tem'} menos de ${min} ${min === 1 ? 'integrante' : 'integrantes'}.`;
     if (used.length < 2) return 'São necessárias pelo menos 2 equipes com jogadores.';
@@ -257,7 +259,12 @@ export class Room {
     if (!r.contest || !['question', 'paused'].includes(r.phase)) return;
     for (const p of r.players.values()) if (p.sid && (!r.contest.pids.has(p.pid) || r.contest.states.get(p.pid)?.status === 'complete')) this.send(p.sid, 'game:spectate', this.spectatorState(p.pid));
   }
-  broadcastLobby() { this.toPlayers('lobby:update', this.lobbyState()); this.pushAdmin(); }
+  broadcastLobby() {
+    const state = this.lobbyState();
+    // Inclui quem ainda está preenchendo a inscrição para atualizar os campos necessários.
+    for (const s of this.socks.values()) if (s.id !== this.r.admin) this.send(s.id, 'lobby:update', state);
+    this.pushAdmin();
+  }
 
   /* ---------- timers por participante ---------- */
   clearPlayerTimer(pid) {
@@ -620,15 +627,16 @@ export class Room {
         if (r.phase !== 'lobby') return cb({ ok: false, error: 'As configurações só podem mudar antes de iniciar.' });
         const mode = d.mode || r.config.mode;
         if (!MODES[mode]) return cb({ ok: false, error: 'Modo de partida inválido.' });
-        if (mode !== r.config.mode && r.players.size) return cb({ ok: false, error: 'Escolha o modo antes de receber participantes. Esvazie a sala para mudar.' });
         const n = Math.trunc(+d.numTeams), mn = Math.trunc(+d.min), mx = Math.trunc(+d.max);
         if (!(n >= 2 && n <= TEAMS.length)) return cb({ ok: false, error: `O número de equipes deve ficar entre 2 e ${TEAMS.length}.` });
         if (!(mn >= 1 && mn <= 5 && mx >= 1 && mx <= 5)) return cb({ ok: false, error: 'Mínimo e máximo por equipe devem ficar entre 1 e 5.' });
         if (mn > mx) return cb({ ok: false, error: 'O mínimo por equipe não pode ser maior que o máximo.' });
-        const cheia = TEAMS.slice(0, n).find(t => this.members(t.id).length > mx);
+        const cheia = mode !== 'individual' && TEAMS.slice(0, n).find(t => this.members(t.id).length > mx);
         if (cheia) return cb({ ok: false, error: `${cheia.name} já tem ${this.members(cheia.id).length} jogadores. Remova alguém antes de reduzir o máximo.` });
-        const fora = TEAMS.slice(n).find(t => this.members(t.id).length > 0);
+        const fora = mode !== 'individual' && TEAMS.slice(n).find(t => this.members(t.id).length > 0);
         if (fora) return cb({ ok: false, error: `${fora.name} tem jogadores. Remova-os antes de reduzir o número de equipes.` });
+        // A identidade e a conexão permanecem; só equipes deixam de ser necessárias no individual.
+        if (mode === 'individual') for (const p of r.players.values()) p.team = null;
         r.config = { numTeams: n, min: mn, max: mx, mode, locked: d.locked === true }; cb({ ok: true }); this.broadcastLobby();
       }),
       'admin:balance': adm((s, d, cb) => {
@@ -677,7 +685,8 @@ export class Room {
       },
       'player:switch': (s, d, cb) => {
         const r = this.r, p = r.players.get(s.data.pid);
-        if (r.config.mode === 'individual' || r.config.locked) return cb({ ok: false, error: 'Troca de equipes indisponível.' });
+        // Inscrições fechadas impedem trocas, mas permitem completar uma equipe pendente.
+        if (r.config.mode === 'individual' || (r.config.locked && p?.team)) return cb({ ok: false, error: 'Troca de equipes indisponível.' });
         if (!p || p.sid !== s.id || r.phase !== 'lobby' || !d || !this.active().some(t => t.id === d.team)) return cb({ ok: false, error: 'Troca de equipe indisponível.' });
         if (p.team !== d.team && this.members(d.team).length >= r.config.max) return cb({ ok: false, error: 'Equipe cheia.' });
         p.team = d.team; cb({ ok: true, team: d.team }); this.broadcastLobby();

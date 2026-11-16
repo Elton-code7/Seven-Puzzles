@@ -256,7 +256,8 @@ try {
   const config = createRoom();
   assert.equal(call(config, 'admin:config', { mode: 'invalid', numTeams: 3, min: 1, max: 5 }).ok, false);
   for (let i=0;i<5;i++) join(config, 'Pessoa' + i, 'and');
-  assert.equal(call(config, 'admin:config', { mode: 'individual', numTeams: 3, min: 1, max: 5 }).ok, false);
+  assert.equal(call(config, 'admin:config', { mode: 'individual', numTeams: 3, min: 1, max: 5 }).ok, true);
+  assert.equal(call(config, 'admin:config', { mode: 'groups', numTeams: 6, min: 1, max: 5 }).ok, true);
   assert.equal(call(config, 'admin:balance').ok, true);
   assert.equal(config.active().filter(t => config.members(t.id).length).length, 5);
   assert.equal(call(config, 'admin:config', { mode: 'groups', numTeams: 6, min: 1, max: 5, locked: true }).ok, true);
@@ -462,6 +463,78 @@ assert.equal(staleMessages, 0, 'Mensagens de uma conexão encerrada não podem r
     assert.equal(lobbyMessage.a[0].players.length, 1);
     assert.equal(waiting.messages.filter(m => m.e === 'admin:state').at(-1).a[0].participants, 1);
   }
+
+  // Mudanças de modalidade preservam identidade e exigem somente os dados pendentes.
+  for (const teamMode of ['groups', 'elimination']) {
+    const changing = createRoom('individual'), ana = join(changing, 'Ana'), bia = join(changing, 'Bia');
+    const identity = [...changing.r.players.values()].map(p => [p.pid, p.token, p.name, p.sid]);
+    const page = playerPage(changing, ana); page.snapshot();
+    const settings = { mode: teamMode, numTeams: 3, min: 1, max: 1, locked: true };
+    assert.equal(call(changing, 'admin:config', settings, 'Ana-socket').ok, false);
+    assert.equal(call(changing, 'admin:config', settings).ok, true);
+    page.snapshot();
+    assert.equal(page.screen(), 's-join');
+    assert.equal(page.elements.get('name').hidden, true);
+    assert.equal(page.elements.get('join').textContent, 'Confirmar equipe');
+    assert.match(page.elements.get('jNotice').textContent, /alterou a modalidade.*Seu nome já está confirmado/);
+    assert.match(changing.startCheck(), /2 participantes/);
+    assert.equal(call(changing, 'admin:start').ok, false);
+    assert.equal(changing.r.phase, 'lobby');
+    // Voltar à espera permite sair da sala sem forçar uma escolha.
+    page.click('back'); page.snapshot();
+    assert.equal(page.screen(), 's-lobby');
+    assert.equal(page.elements.get('changeTeam').textContent, 'Escolher equipe');
+    assert.equal(page.elements.get('changeTeam').disabled, false);
+    page.click('changeTeam'); assert.equal(page.screen(), 's-join');
+    const refreshed = playerPage(changing, ana); refreshed.snapshot();
+    assert.equal(refreshed.screen(), 's-join');
+    assert.equal(refreshed.elements.get('name').hidden, true);
+    assert.equal(call(changing, 'player:switch', { team: 'and' }, 'Ana-socket').ok, true);
+    page.snapshot(); assert.equal(page.screen(), 's-lobby');
+    assert.equal(call(changing, 'player:switch', { team: 'or' }, 'Ana-socket').ok, false);
+    assert.equal(call(changing, 'player:switch', { team: 'and' }, 'Bia-socket').ok, false);
+    assert.match(changing.startCheck(), /1 participante/);
+    assert.equal(call(changing, 'player:switch', { team: 'or' }, 'Bia-socket').ok, true);
+    assert.equal(changing.startCheck(), null);
+    // Trocar entre modalidades de equipes mantém as escolhas e não pede novo cadastro.
+    const other = teamMode === 'groups' ? 'elimination' : 'groups';
+    assert.equal(call(changing, 'admin:config', { ...settings, mode: other }).ok, true);
+    page.snapshot(); assert.equal(page.screen(), 's-lobby');
+    assert.equal(changing.r.players.get(ana).team, 'and'); assert.equal(changing.r.players.get(bia).team, 'or');
+    // A mudança para individual encerra uma edição aberta e remove só as equipes.
+    assert.equal(call(changing, 'admin:config', { ...settings, locked: false }).ok, true);
+    page.snapshot(); page.click('changeTeam'); assert.equal(page.screen(), 's-join');
+    assert.equal(call(changing, 'admin:config', { ...settings, mode: 'individual' }).ok, true);
+    page.snapshot(); assert.equal(page.screen(), 's-lobby');
+    assert.equal(page.elements.get('changeTeam').hidden, true);
+    assert.match(page.elements.get('lNotice').textContent, /individual/);
+    assert.ok([...changing.r.players.values()].every(p => p.team === null));
+    assert.deepEqual([...changing.r.players.values()].map(p => [p.pid, p.token, p.name, p.sid]), identity);
+    assert.equal(changing.startCheck(), null);
+    // Estado persistido mantém sessões e pendências, inclusive após reinício do Worker.
+    call(changing, 'admin:config', settings); await changing.persist();
+    await changing.ctx.storage.put('init', true);
+    const persisted = new Room({ storage: changing.ctx.storage }, env);
+    rooms.push(persisted); await persisted.ensure(changing.r.code);
+    assert.equal(persisted.r.config.mode, teamMode);
+    assert.equal(persisted.r.players.get(ana).token, changing.r.players.get(ana).token);
+    assert.match(persisted.startCheck(), /2 participantes/);
+    // Distribuição administrativa também resolve pendências sem expulsar ninguém.
+    assert.equal(call(changing, 'admin:balance').ok, true);
+    page.snapshot(); assert.equal(page.screen(), 's-lobby');
+    assert.equal(changing.startCheck(), null);
+    assert.equal(call(changing, 'admin:start').ok, true);
+    assert.equal(call(changing, 'admin:config', { ...settings, mode: 'individual' }).ok, false);
+    assert.equal(call(changing, 'player:switch', { team: 'or' }, 'Ana-socket').ok, false);
+    changing.clearAllTimers();
+  }
+  // Uma sala com mais participantes que o limite individual não é esvaziada.
+  const oversized = createRoom();
+  for (let i = 0; i <= individualCapacity(PLAN_MAIN); i++) join(oversized, 'Lotação' + i, oversized.active()[Math.floor(i / 5)].id);
+  const size = oversized.r.players.size;
+  assert.equal(call(oversized, 'admin:config', { mode: 'individual', numTeams: 2, min: 1, max: 1 }).ok, true);
+  assert.equal(oversized.r.players.size, size); assert.ok(oversized.startCheck());
+  assert.equal(call(oversized, 'admin:start').ok, false);
 
   // Exclusão definitiva: somente admin no lobby, sem dados de jogadores ou timers restantes.
   const deleted = createRoom(), deletedPid = join(deleted, 'Participante', 'and');

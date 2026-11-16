@@ -44,15 +44,19 @@ function renderJoinTeams() {
   $('#jMode').textContent = MODES[S.cfg.mode]?.name || ''; $('#jModeRules').textContent = MODE_RULES(S.cfg.mode);
   $('#jTeamTitle').hidden = S.cfg.mode === 'individual'; $('#jTeams').hidden = S.cfg.mode === 'individual';
   $('#nameLabel').hidden = $('#name').hidden = !!S.editingTeam;
-  $('#back').textContent = S.editingTeam ? 'Cancelar troca' : 'Voltar';
-  $('#join').textContent = S.editingTeam ? 'Confirmar troca de equipe' : S.cfg.mode === 'individual' ? 'Entrar na disputa' : 'Entrar na equipe';
+  const pending = S.editingTeam && !S.team;
+  $('#jNotice').textContent = [S.modeNotice, pending ? 'Seu nome já está confirmado. Escolha uma equipe para liberar o início da partida.' : ''].filter(Boolean).join(' ');
+  $('#jNotice').hidden = !$('#jNotice').textContent;
+  $('#jRules').textContent = rules(S.cfg);
+  $('#back').textContent = pending ? 'Voltar à sala de espera' : S.editingTeam ? 'Cancelar troca' : 'Voltar';
+  $('#join').textContent = pending ? 'Confirmar equipe' : S.editingTeam ? 'Confirmar troca de equipe' : S.cfg.mode === 'individual' ? 'Entrar na disputa' : 'Entrar na equipe';
   $('#jTeams').innerHTML = S.teams.map(t => teamBtn(t, { sel: S.pick === t.id, mine: !!S.pid && t.id === S.team })).join('');
   $$('#jTeams .team').forEach(b => b.onclick = () => { S.pick = b.dataset.id; renderJoinTeams(); });
 }
 $('#go').onclick = () => checkCode($('#code').value);
 $('#code').onkeydown = e => { if (e.key === 'Enter') checkCode(e.target.value); };
 $('#back').onclick = () => {
-  if (S.editingTeam && S.lobby) { S.editingTeam = false; S.pick = S.team; renderLobby(S.lobby); }
+  if (S.editingTeam && S.lobby) { S.editingTeam = false; S.deferTeamChoice = true; S.pick = S.team; renderLobby(S.lobby); }
   else returnToHome();
 };
 $('#join').onclick = () => {
@@ -88,24 +92,38 @@ $('#stopScan').onclick = stopScan;
 
 /* ---------- sala de espera ---------- */
 function renderLobby(st) {
+  const changed = S.cfg.mode && S.cfg.mode !== st.config.mode;
+  if (changed) {
+    S.modeNotice = `O administrador alterou a modalidade para ${MODES[st.config.mode].name}.`;
+    S.editingTeam = false; S.deferTeamChoice = false; S.pick = null;
+    $('#joinErr').textContent = '';
+  }
   S.lobby = st;
   S.cfg = st.config; S.teams = st.teams;
   if (!S.pid) { $('#jRules').textContent = rules(S.cfg); renderJoinTeams(); return; }
-  const me = S.cfg.mode === 'individual' ? st.players.find(p => p.pid === S.pid) : st.teams.flatMap(t => t.members.map(m => ({ ...m, t: t.id }))).find(m => m.pid === S.pid);
+  const me = st.players.find(p => p.pid === S.pid);
   if (!me) return;
-  S.team = me.t || null; save(); S.spectatorHome = false; spectator = null; finalResult = null; $('#watchAgain').hidden = true;
+  const previousTeam = S.team;
+  S.team = me.team || null; save(); S.spectatorHome = false; spectator = null; finalResult = null; $('#watchAgain').hidden = true;
+  if (!previousTeam && S.team) S.editingTeam = false;
+  const pending = S.cfg.mode !== 'individual' && !S.team;
+  $('#lNotice').textContent = S.modeNotice || ''; $('#lNotice').hidden = !S.modeNotice;
   $('#lCode').textContent = S.code; $('#lName').textContent = S.name; clearInterval(tick);
   $('#lMode').textContent = MODES[S.cfg.mode].name; $('#lModeRules').textContent = MODE_RULES(S.cfg.mode);
-  $('#lHint').textContent = S.cfg.mode === 'individual' ? 'Todos disputam individualmente.' : S.cfg.locked ? 'As inscrições e trocas de equipe estão fechadas.' : 'Equipe confirmada. Para mudar, use “Trocar de equipe” e confirme sua nova escolha.';
-  $('#changeTeam').hidden = S.cfg.mode === 'individual'; $('#changeTeam').disabled = S.cfg.locked;
+  $('#lHint').textContent = pending ? 'Seu nome está confirmado. Escolha uma equipe para que a partida possa começar.' : S.cfg.mode === 'individual' ? 'Todos disputam individualmente.' : S.cfg.locked ? 'As inscrições e trocas de equipe estão fechadas.' : 'Equipe confirmada. Para mudar, use “Trocar de equipe” e confirme sua nova escolha.';
+  $('#changeTeam').textContent = pending ? 'Escolher equipe' : 'Trocar de equipe';
+  $('#changeTeam').hidden = S.cfg.mode === 'individual'; $('#changeTeam').disabled = S.cfg.locked && !pending;
   $('#lTeams').innerHTML = S.cfg.mode === 'individual' ? st.players.map(p => `<div class="card">${esc(p.name)} <small class="muted">${p.online ? 'online' : 'desconectado'}</small></div>`).join('') : st.teams.map(t => teamBtn(t, { sel: t.id === S.team, list: true, readonly: true })).join('');
-  if (S.editingTeam && !S.cfg.locked && S.cfg.mode !== 'individual') { renderJoinTeams(); show('s-join'); return; }
+  if (pending && !S.deferTeamChoice && !S.editingTeam) { S.editingTeam = true; S.pick = null; }
+  if (S.editingTeam && (!S.cfg.locked || pending) && S.cfg.mode !== 'individual') {
+    $('#jCode').textContent = S.code; renderJoinTeams(); show('s-join'); return;
+  }
   S.editingTeam = false;
   show('s-lobby');
 }
 socket.on('lobby:update', renderLobby);
 $('#changeTeam').onclick = () => {
-  if (!S.pid || !S.lobby || S.cfg.locked || S.cfg.mode === 'individual') return;
+  if (!S.pid || !S.lobby || (S.cfg.locked && S.team) || S.cfg.mode === 'individual') return;
   S.editingTeam = true; S.pick = S.team;
   $('#jCode').textContent = S.code; $('#jRules').textContent = rules(S.cfg); $('#joinErr').textContent = ''; $('#join').disabled = false;
   renderJoinTeams(); show('s-join');
@@ -163,7 +181,7 @@ socket.on('game:complete', p => {
 function returnToHome(message = '') {
   clearInterval(tick); localStorage.removeItem('sp_session'); socket.close();
   clearRoomLink();
-  Object.assign(S, { pid: null, token: null, resume: null, code: null, name: null, team: null, pick: null, teams: [], spectatorHome: false });
+  Object.assign(S, { pid: null, token: null, resume: null, code: null, name: null, team: null, pick: null, teams: [], spectatorHome: false, modeNotice: '', deferTeamChoice: false });
   $('#code').value = ''; $('#name').value = '';
   for (const id of ['jCode', 'lCode', 'lName', 'jTeams', 'lTeams', 'spPlayers', 'spRank', 'eBody', 'eRank', 'bBody', 'rBody', 'rRank', 'qText', 'qOpts']) $('#' + id).innerHTML = '';
   spectator = null; finalResult = null;
